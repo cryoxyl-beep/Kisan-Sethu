@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
@@ -45,10 +43,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -74,6 +73,7 @@ import com.kisansethu.app.ui.home.ProfilePlaceholder
 import com.kisansethu.app.ui.home.SlotBookingsPlaceholder
 import com.kisansethu.app.ui.theme.KisanSethuTheme
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.haze
 import dev.chrisbanes.haze.hazeChild
 
@@ -95,7 +95,7 @@ fun HomeScreen(
 ) {
     val bottomNavController = rememberNavController()
     val hazeState = remember { HazeState() }
-    
+
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Bookings,
@@ -136,11 +136,10 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background Content with Haze applied
+            // ── Haze source: this content is blurred through the glass pill ──
             NavHost(
                 navController = bottomNavController,
                 startDestination = BottomNavItem.Home.route,
-                // Only applying top padding so the content scrolls UNDER the floating bottom nav
                 modifier = Modifier
                     .haze(state = hazeState)
                     .fillMaxSize()
@@ -175,18 +174,12 @@ fun HomeScreen(
                         }
                     )
                 }
-                composable(BottomNavItem.Bookings.route) {
-                    SlotBookingsPlaceholder()
-                }
-                composable(BottomNavItem.Payment.route) {
-                    PaymentPlaceholder()
-                }
-                composable(BottomNavItem.Profile.route) {
-                    ProfilePlaceholder()
-                }
+                composable(BottomNavItem.Bookings.route) { SlotBookingsPlaceholder() }
+                composable(BottomNavItem.Payment.route) { PaymentPlaceholder() }
+                composable(BottomNavItem.Profile.route) { ProfilePlaceholder() }
             }
 
-            // Liquid Glass Navigation Bar Overlay
+            // ── Liquid Glass Nav Bar overlay ──
             val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
@@ -217,55 +210,75 @@ private fun LiquidGlassNavBar(
     onItemSelected: (BottomNavItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var swipeOffset by remember { mutableStateOf(0f) }
-    val currentIndex = items.indexOfFirst { it.route == currentRoute }.takeIf { it >= 0 } ?: 0
+    // Use mutableStateOf so the swipe lambda always reads the latest index
+    var swipeAccum by remember { mutableFloatStateOf(0f) }
+
+    // Frosted glass style: bright white-tinted blur for light theme
+    val glassStyle = HazeStyle(
+        backgroundColor = Color.White,
+        tint = dev.chrisbanes.haze.HazeTint(Color.White.copy(alpha = 0.55f)),
+        blurRadius = 24.dp,
+        noiseFactor = 0.08f
+    )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 20.dp)
-            .pointerInput(Unit) {
+            .padding(horizontal = 20.dp, vertical = 18.dp)
+            // Swipe gesture — currentRoute is read via mutableState; captured by reference correctly
+            .pointerInput(currentRoute) {
                 detectHorizontalDragGestures(
-                    onDragEnd = { swipeOffset = 0f },
-                    onDragCancel = { swipeOffset = 0f }
+                    onDragEnd = { swipeAccum = 0f },
+                    onDragCancel = { swipeAccum = 0f }
                 ) { change, dragAmount ->
                     change.consume()
-                    swipeOffset += dragAmount
-                    if (swipeOffset > 80f) {
-                        if (currentIndex > 0) onItemSelected(items[currentIndex - 1])
-                        swipeOffset = 0f
-                    } else if (swipeOffset < -80f) {
-                        if (currentIndex < items.size - 1) onItemSelected(items[currentIndex + 1])
-                        swipeOffset = 0f
+                    swipeAccum += dragAmount
+                    val activeIndex = items.indexOfFirst { it.route == currentRoute }
+                        .coerceAtLeast(0)
+                    if (swipeAccum > 80f) {
+                        if (activeIndex > 0) onItemSelected(items[activeIndex - 1])
+                        swipeAccum = 0f
+                    } else if (swipeAccum < -80f) {
+                        if (activeIndex < items.size - 1) onItemSelected(items[activeIndex + 1])
+                        swipeAccum = 0f
                     }
                 }
             },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
-        // Main Pill (First 3 items)
+        // ── Main pill: Home, Bookings, Payment ──
         val mainItems = items.take(3)
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(72.dp)
+                // Extra height so the 16dp pop-out badge + label both fit without clipping
+                .height(80.dp)
                 .clip(CircleShape)
-                .hazeChild(state = hazeState)
-                .background(
-                    color = Color.White.copy(alpha = 0.15f),
-                    shape = CircleShape
+                .hazeChild(
+                    state = hazeState,
+                    style = glassStyle
                 )
+                // Top-edge glass sheen highlight
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.4f),
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.85f),
+                            Color.White.copy(alpha = 0.20f)
+                        )
+                    ),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
+                // Bottom-align so items that pop up go upward and the label stays at base
                 verticalAlignment = Alignment.Bottom
             ) {
                 mainItems.forEach { item ->
@@ -278,22 +291,26 @@ private fun LiquidGlassNavBar(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
-        // Profile Pill (Last item)
+        // ── Profile circle pill ──
         val profileItem = items.last()
         Box(
             modifier = Modifier
-                .size(72.dp)
+                .size(80.dp)
                 .clip(CircleShape)
-                .hazeChild(state = hazeState)
-                .background(
-                    color = Color.White.copy(alpha = 0.15f),
-                    shape = CircleShape
+                .hazeChild(
+                    state = hazeState,
+                    style = glassStyle
                 )
                 .border(
                     width = 1.dp,
-                    color = Color.White.copy(alpha = 0.4f),
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.85f),
+                            Color.White.copy(alpha = 0.20f)
+                        )
+                    ),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -314,28 +331,33 @@ fun LiquidGlassNavItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Icon pops upward when selected — ensure enough container height to see the overflow
     val yOffset by animateDpAsState(
-        targetValue = if (selected) (-16).dp else 0.dp,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
-        label = "yOffset"
+        targetValue = if (selected) (-14).dp else 0.dp,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 280f),
+        label = "iconYOffset"
     )
-    
+
     val badgeScale by animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 380f),
         label = "badgeScale"
     )
-    
+
     val iconColor by animateColorAsState(
-        targetValue = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        targetValue = if (selected) Color.White else Color(0xFF555555),
         animationSpec = tween(200),
         label = "iconColor"
     )
 
+    // Primary green for badge — use explicit color to guarantee light-theme consistency
+    val primaryGreen = MaterialTheme.colorScheme.primary
+
+    // Minimum 48dp touch target
     Box(
         modifier = modifier
-            .height(72.dp)
-            .width(64.dp)
+            .height(80.dp)
+            .width(68.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -343,40 +365,70 @@ fun LiquidGlassNavItem(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Label at bottom
+        // Label — sits at the bottom of the 80dp container (fully visible)
         AnimatedVisibility(
             visible = selected,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
         ) {
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+                color = Color(0xFF333333),
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1
             )
         }
-        
-        // Icon and popping badge
+
+        // Icon + badge — positioned in the middle, then offset upward when selected
         Box(
             modifier = Modifier
-                .offset(y = yOffset)
-                .size(48.dp),
+                .align(Alignment.Center)
+                .offset(y = if (selected) (-6).dp else 0.dp) // mild upward shift within container
+                .size(44.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Green badge
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scale(badgeScale)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-            )
-            
+            // Glassmorphic badge: radial gradient green bubble with top highlight
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(badgeScale)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    primaryGreen.copy(alpha = 0.95f),
+                                    primaryGreen
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+                // Top-edge highlight to add depth / glass refraction feel
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .size(width = 22.dp, height = 10.dp)
+                        .offset(y = 5.dp)
+                        .scale(badgeScale)
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.45f),
+                                    Color.White.copy(alpha = 0f)
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+            }
+
             Icon(
                 imageVector = item.icon,
                 contentDescription = item.title,
                 tint = iconColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
         }
     }
