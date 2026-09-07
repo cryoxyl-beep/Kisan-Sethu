@@ -1,36 +1,55 @@
 # 🌾 Kissaan Sync (Kisan-Sethu)
 
-A modern, digital public-service Android application designed to provide farmers with a calm, trustworthy, and minimal interface for procurement slot bookings, live queue tracking, and direct payment tracking. 
+> A modern, digital public-service Android application designed to provide farmers with a calm, trustworthy, and minimal interface for procurement slot bookings, live queue tracking, and direct payment tracking.
 
-Built with **Kotlin**, **Jetpack Compose**, and **Firebase**.
-
----
-
-## 📖 About
-
-Kissaan Sync bridges the gap between digital infrastructure and the agricultural sector, offering farmers a seamless, government-service-oriented platform. We intentionally stepped away from traditional "agricultural clichés" to focus on a hyper-clean, minimal, and modern digital identity.
-
-**Recent Update:** The app now features a highly custom **"Liquid Glass" split-pill bottom navigation bar**. Inspired by premium OS aesthetics, it uses the `Haze` library to achieve real-time frosted glass background blur natively in Jetpack Compose. The nav bar includes interactive swipe gestures and animated "pop-out" icons for a highly engaging, fluid user experience.
+Built natively for Android using **Kotlin**, **Jetpack Compose**, and **Firebase**.
 
 ---
 
-## ✨ Current Features
+## 📖 About This Project
 
-* **Liquid Glass Navigation:** Floating, split-pill navigation bar with true background blur, swipe gesture support, and springing pop-out icons.
-* **Modern Digital Identity:** Clean, minimal UI utilizing Material 3 components and full-screen interactive overlays.
-* **Multi-Language Support:** Remembers localized language preferences securely.
-* **Robust Registration:** 4-step secure onboarding storing Farmer details safely via Firebase Realtime Database.
-* **Smart Authentication:** Log in seamlessly via a unique 6-character Farmer ID or 10-digit mobile number + secure 6-digit PIN.
-* **Dynamic Dashboard:** Conditional UI displaying live queues and active token status only when a procurement slot is booked.
+Kissaan Sync bridges the gap between complex digital infrastructure and the agricultural sector. It offers farmers a seamless, government-service-oriented platform that is easy to understand and use. 
 
-## 📥 Download
+**Design Philosophy:** We intentionally stepped away from traditional "agricultural clichés" (like cluttered green backgrounds and tractor vectors). Instead, the app focuses on a hyper-clean, minimal, and modern digital identity that instills trust and clarity. 
 
-You can download the latest compiled APK directly from the **[release folder](release/KisanSethu-debug.apk)** in this repository.
+**Recent Enhancements:** The application features premium UX details, such as an iOS-inspired **"Liquid Glass" split-pill navigation bar** that utilizes real-time frosted glass rendering, and a robust **Persistent Session** system that remembers your login state so you can get straight to your dashboard.
 
-## 🛠️ Tech Stack
+---
 
-* **UI Toolkit:** Jetpack Compose (Material 3)
-* **Visual Effects:** dev.chrisbanes.haze (Real-time blur rendering)
+## ✨ Features In Detail
+
+### 🧭 Liquid Glass Navigation
+* **True Background Blur:** Built using the `Haze` library, the navigation bar leverages Android's `RenderNode` APIs to dynamically blur the scrolling content behind it in real-time.
+* **Dual-Theme Adaptive:** The frosted glass intelligently adapts. In Light Mode, it renders a bright, airy frost. In Dark Mode, it shifts to a sleek, dim translucent glass. 
+* **Swipe-to-Navigate:** Simply swipe left or right across the bottom bar to smoothly transition between tabs.
+* **Minimalist UI:** Icon-only interface with a subtle, gray pill-shaped highlight for the active state.
+
+### 🔐 Smart Authentication & Sessions
+* **Persistent Login:** Log in once and stay logged in. The app securely persists session tokens using Android `DataStore`, bypassing the login screen on subsequent launches.
+* **Flexible Sign-In:** Authenticate using a unique 6-character **Farmer ID** or a 10-digit **Mobile Number**, combined with a secure 6-digit PIN.
+* **Secure Registration:** A seamless 4-step onboarding process safely stores farmer credentials and demographic data via Firebase Realtime Database.
+
+### 🌍 Accessibility & Dashboard
+* **Multi-Language Support:** Remembers localized language preferences (English, Hindi, Telugu, etc.) securely, applying them instantly across the app.
+* **Dynamic Dashboard:** A context-aware UI that conditionally displays live queues and active token status only when a procurement slot is actively booked.
+
+---
+
+## 📥 Download & Install (Published Package)
+
+You can download and install the latest compiled APK package directly from this repository:
+
+**👉 [Download KisanSethu-debug.apk](release/KisanSethu-debug.apk)**
+
+*Note: You may need to enable "Install from Unknown Sources" on your Android device to install the APK.*
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+* **UI Toolkit:** Jetpack Compose (Material Design 3)
 * **Language:** Kotlin
-* **Backend:** Firebase Realtime Database
-* **Architecture:** MVVM, Navigation Component
+* **Visual Effects:** `dev.chrisbanes.haze` (for real-time composable blur)
+* **Backend / DB:** Firebase Realtime Database
+* **Local Storage:** Jetpack DataStore (Preferences)
+* **Architecture:** MVVM (Model-View-ViewModel) & Compose Navigation Component
