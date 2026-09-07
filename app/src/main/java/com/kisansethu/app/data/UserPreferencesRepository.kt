@@ -17,6 +17,8 @@ class UserPreferencesRepository(private val context: Context) {
     private object PreferencesKeys {
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
         val IS_DARK_THEME = booleanPreferencesKey("is_dark_theme")
+        val LOGGED_IN_FARMER_ID = stringPreferencesKey("logged_in_farmer_id")
+        val LOGGED_IN_FARMER_NAME = stringPreferencesKey("logged_in_farmer_name")
     }
 
     val selectedLanguage: Flow<String?> = context.dataStore.data
@@ -29,6 +31,12 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[PreferencesKeys.IS_DARK_THEME]
         }
 
+    val loggedInFarmerId: Flow<String?> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.LOGGED_IN_FARMER_ID] }
+
+    val loggedInFarmerName: Flow<String?> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.LOGGED_IN_FARMER_NAME] }
+
     suspend fun saveSelectedLanguage(languageCode: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_LANGUAGE] = languageCode
@@ -38,6 +46,20 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun saveDarkTheme(isDark: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.IS_DARK_THEME] = isDark
+        }
+    }
+
+    suspend fun saveLoggedInFarmer(farmerId: String, farmerName: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LOGGED_IN_FARMER_ID] = farmerId
+            preferences[PreferencesKeys.LOGGED_IN_FARMER_NAME] = farmerName
+        }
+    }
+
+    suspend fun clearLoggedInFarmer() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.LOGGED_IN_FARMER_ID)
+            preferences.remove(PreferencesKeys.LOGGED_IN_FARMER_NAME)
         }
     }
 }

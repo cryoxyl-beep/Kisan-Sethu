@@ -54,23 +54,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kisansethu.app.data.FarmerLoginResult
 import com.kisansethu.app.ui.components.GlassButton
 import com.kisansethu.app.ui.login.LoginViewModel
 import com.kisansethu.app.ui.theme.KisanSethuTheme
 import androidx.compose.ui.graphics.toArgb
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
     onLoginSuccess: (FarmerLoginResult) -> Unit = {},
+    onSessionSave: (suspend (farmerId: String, farmerName: String) -> Unit)? = null,
     isDarkTheme: Boolean = false,
     onToggleTheme: (() -> Unit)? = null,
     viewModel: LoginViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isPinVisible by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -254,7 +258,10 @@ fun LoginScreen(
             GlassButton(
                 onClick = {
                     viewModel.performLogin { farmer ->
-                        onLoginSuccess(farmer)
+                        coroutineScope.launch {
+                            onSessionSave?.invoke(farmer.farmerId, farmer.fullName)
+                            onLoginSuccess(farmer)
+                        }
                     }
                 },
                 enabled = !uiState.isLoading,

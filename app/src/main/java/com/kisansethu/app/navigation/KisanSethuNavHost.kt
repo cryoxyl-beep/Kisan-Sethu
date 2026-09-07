@@ -65,6 +65,9 @@ fun KisanSethuNavHost(
     val context = LocalContext.current
     val userPreferencesRepository = remember { UserPreferencesRepository(context) }
     val persistedLanguageCode by userPreferencesRepository.selectedLanguage.collectAsState(initial = null)
+    // Session persistence: read saved farmer login from DataStore
+    val loggedInFarmerId by userPreferencesRepository.loggedInFarmerId.collectAsState(initial = null)
+    val loggedInFarmerName by userPreferencesRepository.loggedInFarmerName.collectAsState(initial = null)
 
     LaunchedEffect(persistedLanguageCode) {
         persistedLanguageCode?.let { code ->
@@ -102,16 +105,17 @@ fun KisanSethuNavHost(
         composable<Screen.Splash> {
             SplashScreen(
                 onSplashFinished = {
-                    val nextScreen = if (!persistedLanguageCode.isNullOrEmpty()) {
-                        Screen.AuthEntry
-                    } else {
-                        Screen.LanguageSelection
+                    val nextScreen = when {
+                        // Active session — skip straight to Home
+                        !loggedInFarmerId.isNullOrEmpty() && !loggedInFarmerName.isNullOrEmpty() ->
+                            Screen.Home(farmerId = loggedInFarmerId!!, farmerName = loggedInFarmerName!!)
+                        // Language not chosen yet
+                        persistedLanguageCode.isNullOrEmpty() -> Screen.LanguageSelection
+                        // Language chosen, but not logged in
+                        else -> Screen.AuthEntry
                     }
-                    
                     navController.navigate(nextScreen) {
-                        popUpTo<Screen.Splash> {
-                            inclusive = true
-                        }
+                        popUpTo<Screen.Splash> { inclusive = true }
                     }
                 }
             )
@@ -154,16 +158,18 @@ fun KisanSethuNavHost(
         composable<Screen.Login> {
             LoginScreen(
                 onLoginSuccess = { farmer ->
+                    // Persist session so next app open skips login
                     navController.navigate(
                         Screen.Home(
                             farmerId = farmer.farmerId,
                             farmerName = farmer.fullName
                         )
                     ) {
-                        popUpTo<Screen.AuthEntry> {
-                            inclusive = false
-                        }
+                        popUpTo<Screen.AuthEntry> { inclusive = true }
                     }
+                },
+                onSessionSave = { farmerId, farmerName ->
+                    userPreferencesRepository.saveLoggedInFarmer(farmerId, farmerName)
                 },
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = onToggleTheme
@@ -193,11 +199,13 @@ fun KisanSethuNavHost(
                 farmerName = homeRoute.farmerName,
                 farmerId = homeRoute.farmerId,
                 onSignOut = {
+                    // Clear saved session so next launch shows login
                     navController.navigate(Screen.AuthEntry) {
-                        popUpTo<Screen.Home> {
-                            inclusive = true
-                        }
+                        popUpTo<Screen.Home> { inclusive = true }
                     }
+                },
+                onClearSession = {
+                    userPreferencesRepository.clearLoggedInFarmer()
                 },
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = onToggleTheme

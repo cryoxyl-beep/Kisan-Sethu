@@ -44,7 +44,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,12 +84,14 @@ fun HomeScreen(
     farmerName: String,
     farmerId: String,
     onSignOut: () -> Unit,
+    onClearSession: (suspend () -> Unit)? = null,
     modifier: Modifier = Modifier,
     isDarkTheme: Boolean = false,
     onToggleTheme: (() -> Unit)? = null
 ) {
     val bottomNavController = rememberNavController()
     val hazeState = remember { HazeState() }
+    val coroutineScope = rememberCoroutineScope()
 
     val items = listOf(
         BottomNavItem.Home,
@@ -109,7 +113,12 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onSignOut) {
+                    IconButton(onClick = {
+                        coroutineScope.launch {
+                            onClearSession?.invoke()
+                            onSignOut()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ExitToApp,
                             contentDescription = "Sign Out",
