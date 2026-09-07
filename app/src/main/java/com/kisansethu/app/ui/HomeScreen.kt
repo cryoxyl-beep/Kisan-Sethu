@@ -1,8 +1,9 @@
 package com.kisansethu.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -11,18 +12,27 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
@@ -36,16 +46,23 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -56,6 +73,9 @@ import com.kisansethu.app.ui.home.PaymentPlaceholder
 import com.kisansethu.app.ui.home.ProfilePlaceholder
 import com.kisansethu.app.ui.home.SlotBookingsPlaceholder
 import com.kisansethu.app.ui.theme.KisanSethuTheme
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
     object Home : BottomNavItem("home_dashboard", "Home", Icons.Rounded.Home)
@@ -74,6 +94,7 @@ fun HomeScreen(
     onToggleTheme: (() -> Unit)? = null
 ) {
     val bottomNavController = rememberNavController()
+    val hazeState = remember { HazeState() }
     
     val items = listOf(
         BottomNavItem.Home,
@@ -85,25 +106,6 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
-            val currentRoute = currentDestination?.route
-
-            PillNavigationBar(
-                items = items,
-                currentRoute = currentRoute,
-                onItemSelected = { item ->
-                    bottomNavController.navigate(item.route) {
-                        popUpTo(bottomNavController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        },
         topBar = {
             if (onToggleTheme != null) {
                 Row(
@@ -133,145 +135,249 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = bottomNavController,
-            startDestination = BottomNavItem.Home.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = {
-                fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing)) +
-                        scaleIn(initialScale = 0.93f, animationSpec = tween(350, easing = FastOutSlowInEasing))
-            },
-            exitTransition = {
-                fadeOut(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
-                        scaleOut(targetScale = 1.04f, animationSpec = tween(280, easing = FastOutSlowInEasing))
-            },
-            popEnterTransition = {
-                fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing)) +
-                        scaleIn(initialScale = 1.04f, animationSpec = tween(350, easing = FastOutSlowInEasing))
-            },
-            popExitTransition = {
-                fadeOut(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
-                        scaleOut(targetScale = 0.93f, animationSpec = tween(280, easing = FastOutSlowInEasing))
-            }
-        ) {
-            composable(BottomNavItem.Home.route) {
-                DashboardScreen(
-                    farmerName = farmerName,
-                    farmerId = farmerId,
-                    onBookSlot = {
-                        bottomNavController.navigate(BottomNavItem.Bookings.route) {
-                            popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background Content with Haze applied
+            NavHost(
+                navController = bottomNavController,
+                startDestination = BottomNavItem.Home.route,
+                // Only applying top padding so the content scrolls UNDER the floating bottom nav
+                modifier = Modifier
+                    .haze(state = hazeState)
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding()),
+                enterTransition = {
+                    fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing)) +
+                            scaleIn(initialScale = 0.93f, animationSpec = tween(350, easing = FastOutSlowInEasing))
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
+                            scaleOut(targetScale = 1.04f, animationSpec = tween(280, easing = FastOutSlowInEasing))
+                },
+                popEnterTransition = {
+                    fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing)) +
+                            scaleIn(initialScale = 1.04f, animationSpec = tween(350, easing = FastOutSlowInEasing))
+                },
+                popExitTransition = {
+                    fadeOut(animationSpec = tween(280, easing = FastOutSlowInEasing)) +
+                            scaleOut(targetScale = 0.93f, animationSpec = tween(280, easing = FastOutSlowInEasing))
+                }
+            ) {
+                composable(BottomNavItem.Home.route) {
+                    DashboardScreen(
+                        farmerName = farmerName,
+                        farmerId = farmerId,
+                        onBookSlot = {
+                            bottomNavController.navigate(BottomNavItem.Bookings.route) {
+                                popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
+                    )
+                }
+                composable(BottomNavItem.Bookings.route) {
+                    SlotBookingsPlaceholder()
+                }
+                composable(BottomNavItem.Payment.route) {
+                    PaymentPlaceholder()
+                }
+                composable(BottomNavItem.Profile.route) {
+                    ProfilePlaceholder()
+                }
+            }
+
+            // Liquid Glass Navigation Bar Overlay
+            val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+
+            LiquidGlassNavBar(
+                items = items,
+                currentRoute = currentRoute,
+                hazeState = hazeState,
+                onItemSelected = { item ->
+                    bottomNavController.navigate(item.route) {
+                        popUpTo(bottomNavController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                )
-            }
-            composable(BottomNavItem.Bookings.route) {
-                SlotBookingsPlaceholder()
-            }
-            composable(BottomNavItem.Payment.route) {
-                PaymentPlaceholder()
-            }
-            composable(BottomNavItem.Profile.route) {
-                ProfilePlaceholder()
-            }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }
 
 @Composable
-private fun PillNavigationBar(
+private fun LiquidGlassNavBar(
     items: List<BottomNavItem>,
     currentRoute: String?,
+    hazeState: HazeState,
     onItemSelected: (BottomNavItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val glassBorder = Brush.linearGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-            MaterialTheme.colorScheme.surfaceTint.copy(alpha = 0.20f),
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-        )
+    var swipeOffset by remember { mutableStateOf(0f) }
+    val currentIndex = items.indexOfFirst { it.route == currentRoute }.takeIf { it >= 0 } ?: 0
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = { swipeOffset = 0f },
+                    onDragCancel = { swipeOffset = 0f }
+                ) { change, dragAmount ->
+                    change.consume()
+                    swipeOffset += dragAmount
+                    if (swipeOffset > 80f) {
+                        if (currentIndex > 0) onItemSelected(items[currentIndex - 1])
+                        swipeOffset = 0f
+                    } else if (swipeOffset < -80f) {
+                        if (currentIndex < items.size - 1) onItemSelected(items[currentIndex + 1])
+                        swipeOffset = 0f
+                    }
+                }
+            },
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        // Main Pill (First 3 items)
+        val mainItems = items.take(3)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(72.dp)
+                .clip(CircleShape)
+                .hazeChild(state = hazeState)
+                .background(
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = CircleShape
+                )
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.4f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                mainItems.forEach { item ->
+                    LiquidGlassNavItem(
+                        item = item,
+                        selected = (currentRoute == item.route),
+                        onClick = { onItemSelected(item) }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Profile Pill (Last item)
+        val profileItem = items.last()
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .hazeChild(state = hazeState)
+                .background(
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = CircleShape
+                )
+                .border(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.4f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            LiquidGlassNavItem(
+                item = profileItem,
+                selected = (currentRoute == profileItem.route),
+                onClick = { onItemSelected(profileItem) }
+            )
+        }
+    }
+}
+
+@Composable
+fun LiquidGlassNavItem(
+    item: BottomNavItem,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val yOffset by animateDpAsState(
+        targetValue = if (selected) (-16).dp else 0.dp,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
+        label = "yOffset"
+    )
+    
+    val badgeScale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        label = "badgeScale"
+    )
+    
+    val iconColor by animateColorAsState(
+        targetValue = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        animationSpec = tween(200),
+        label = "iconColor"
     )
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .height(72.dp)
+            .width(64.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f),
-            tonalElevation = 8.dp,
-            shadowElevation = 12.dp,
-            border = BorderStroke(width = 1.2.dp, brush = glassBorder)
+        // Label at bottom
+        AnimatedVisibility(
+            visible = selected,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp)
         ) {
-            Row(
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+        }
+        
+        // Icon and popping badge
+        Box(
+            modifier = Modifier
+                .offset(y = yOffset)
+                .size(48.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Green badge
+            Box(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                items.forEach { item ->
-                    val selected = currentRoute == item.route
-
-                    val activeBgColor by animateColorAsState(
-                        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f) else Color.Transparent,
-                        animationSpec = tween(250),
-                        label = "pillNavBg"
-                    )
-
-                    val activeIconColor by animateColorAsState(
-                        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        animationSpec = tween(250),
-                        label = "pillNavIconColor"
-                    )
-
-                    val pillScale by animateFloatAsState(
-                        targetValue = if (selected) 1f else 0.82f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
-                        label = "pillScale"
-                    )
-
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (selected) 1.15f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        ),
-                        label = "iconScale"
-                    )
-
-                    Surface(
-                        onClick = { onItemSelected(item) },
-                        shape = CircleShape,
-                        color = activeBgColor,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .scale(pillScale)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.title,
-                                tint = activeIconColor,
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .scale(iconScale)
-                            )
-                        }
-                    }
-                }
-            }
+                    .fillMaxSize()
+                    .scale(badgeScale)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+            )
+            
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.title,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
