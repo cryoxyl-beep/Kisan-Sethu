@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "888121438451",
+    "project_id": "kissaan-sync",
+    "firebase_url": "https://kissaan-sync-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "storage_bucket": "kissaan-sync.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:888121438451:android:1bd562fc2ab8903ecb8786",
+        "android_client_info": {
+          "package_name": "com.kisansethu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_g3r2p_B_0d3tjBtpTIaIlesQzrwUVKI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

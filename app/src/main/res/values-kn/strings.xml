@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">ಕಿಸಾನ್ ಸಿಂಕ್</string>
+    <string name="language_selection_title">ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+    <string name="language_selection_subtitle">ಕಿಸಾನ್ ಸಿಂಕ್‌ನಲ್ಲಿ ಬಳಸಲು ನೀವು ಬಯಸುವ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.</string>
+    <string name="btn_continue">ಮುಂದುವರಿಸಿ</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="lang_tamil">தமிழ்</string>
+    <string name="lang_malayalam">മലയാളം</string>
+    <string name="lang_marathi">ಮರಾಠಿ</string>
+    <string name="lang_bengali">ಬಂಗಾಳಿ</string>
+    <string name="lang_kannada">ಕನ್ನಡ</string>
+    <string name="auth_entry_title">ಕಿಸಾನ್ ಸಿಂಕ್‌ಗೆ ಸ್ವಾಗತ</string>
+    <string name="auth_entry_subtitle">ನಿಮ್ಮ ರೈತ ಖಾತೆಯನ್ನು ನಿರ್ವಹಿಸಿ ಮತ್ತು ಖರೀದಿ ಸೇವೆಗಳನ್ನು ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ ಪಡೆಯಿರಿ.</string>
+    <string name="btn_login">ಲಾಗಿನ್</string>
+    <string name="auth_entry_new_user_prompt">ಕಿಸಾನ್ ಸಿಂಕ್‌ಗೆ ಹೊಸಬರೇ? ನಿಮ್ಮ ರೈತ ಖಾತೆಯನ್ನು ರಚಿಸಿ.</string>
+    <string name="btn_create_account">ರೈತ ಖಾತೆಯನ್ನು ರಚಿಸಿ</string>
+    <string name="login_title">ನಿಮ್ಮ ಖಾತೆಗೆ ಲಾಗಿನ್ ಆಗಿ</string>
+    <string name="login_subtitle">OTP ಪಡೆಯಲು ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="mobile_number_placeholder">ಮೊಬೈಲ್ ಸಂಖ್ಯೆ</string>
+    <string name="btn_send_otp">OTP ಕಳುಹಿಸಿ</string>
+    <string name="registration_title">ರೈತರ ನೋಂದಣಿ</string>
+</resources>

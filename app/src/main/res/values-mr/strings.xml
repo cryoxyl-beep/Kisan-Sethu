@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">किसान सिंक</string>
+    <string name="language_selection_title">तुमची भाषा निवडा</string>
+    <string name="language_selection_subtitle">किसान सिंकमध्ये वापरण्यासाठी तुमची पसंतीची भाषा निवडा.</string>
+    <string name="btn_continue">पुढे जा</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="lang_tamil">தமிழ்</string>
+    <string name="lang_malayalam">മലയാളം</string>
+    <string name="lang_marathi">मराठी</string>
+    <string name="lang_bengali">বাংলা</string>
+    <string name="lang_kannada">ಕನ್ನಡ</string>
+    <string name="auth_entry_title">किसान सिंकमध्ये आपले स्वागत आहे</string>
+    <string name="auth_entry_subtitle">तुमचे शेतकरी खाते व्यवस्थापित करा आणि खरेदी सेवा एकाच ठिकाणी मिळवा.</string>
+    <string name="btn_login">लॉगिन</string>
+    <string name="auth_entry_new_user_prompt">किसान सिंकवर नवीन आहात? तुमचे शेतकरी खाते तयार करा.</string>
+    <string name="btn_create_account">शेतकरी खाते तयार करा</string>
+    <string name="login_title">तुमच्या खात्यात लॉगिन करा</string>
+    <string name="login_subtitle">OTP मिळवण्यासाठी तुमचा मोबाईल नंबर प्रविष्ट करा</string>
+    <string name="mobile_number_placeholder">मोबाईल नंबर</string>
+    <string name="btn_send_otp">OTP पाठवा</string>
+    <string name="registration_title">शेतकरी नोंदणी</string>
+</resources>

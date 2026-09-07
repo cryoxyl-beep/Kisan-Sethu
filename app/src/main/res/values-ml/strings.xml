@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">കിസാൻ സിങ്ക്</string>
+    <string name="language_selection_title">നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക</string>
+    <string name="language_selection_subtitle">കിസാൻ സിങ്കിൽ ഉപയോഗിക്കാൻ ആഗ്രഹിക്കുന്ന ഭാഷ തിരഞ്ഞെടുക്കുക.</string>
+    <string name="btn_continue">തുടരുക</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="lang_tamil">தமிழ்</string>
+    <string name="lang_malayalam">മലയാളം</string>
+    <string name="lang_marathi">മരാഠി</string>
+    <string name="lang_bengali">ബംഗാളി</string>
+    <string name="lang_kannada">കന്നഡ</string>
+    <string name="auth_entry_title">കിസാൻ സിങ്കിലേക്ക് സ്വാഗതം</string>
+    <string name="auth_entry_subtitle">നിങ്ങളുടെ കർഷക അക്കൗണ്ട് കൈകാര്യം ചെയ്യുക, സംഭരണ സേവനങ്ങൾ ഒരിടത്ത് നേടുക.</string>
+    <string name="btn_login">ലോഗിൻ</string>
+    <string name="auth_entry_new_user_prompt">കിസാൻ സിങ്കിൽ പുതിയ ആളാണോ? നിങ്ങളുടെ കർഷക അക്കൗണ്ട് ഉണ്ടാക്കൂ.</string>
+    <string name="btn_create_account">കർഷക അക്കൗണ്ട് ഉണ്ടാക്കുക</string>
+    <string name="login_title">നിങ്ങളുടെ അക്കൗണ്ടിലേക്ക് ലോഗിൻ ചെയ്യുക</string>
+    <string name="login_subtitle">OTP ലഭിക്കുന്നതിന് നിങ്ങളുടെ മൊബൈൽ നമ്പർ നൽകുക</string>
+    <string name="mobile_number_placeholder">മൊബൈൽ നമ്പർ</string>
+    <string name="btn_send_otp">OTP അയക്കുക</string>
+    <string name="registration_title">കർഷക രജിസ്ട്രേഷൻ</string>
+</resources>

@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">கிஸான் சிங்க்</string>
+    <string name="language_selection_title">உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="language_selection_subtitle">கிஸான் சிங்க் பயன்பாட்டில் நீங்கள் விரும்பும் மொழியைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="btn_continue">தொடரவும்</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="lang_tamil">தமிழ்</string>
+    <string name="lang_malayalam">മലയാളം</string>
+    <string name="lang_marathi">मराठी</string>
+    <string name="lang_bengali">বাংলা</string>
+    <string name="lang_kannada">ಕನ್ನಡ</string>
+    <string name="auth_entry_title">கிஸான் சிங்கிற்கு வரவேற்கிறோம்</string>
+    <string name="auth_entry_subtitle">உங்கள் விவசாயி கணக்கை நிர்வகித்து கொள்முதல் சேவைகளை ஒரே இடத்தில் பெறவும்.</string>
+    <string name="btn_login">உள்நுழை</string>
+    <string name="auth_entry_new_user_prompt">கிஸான் சிங்கிற்கு புதியவரா? உங்கள் விவசாயி கணக்கை உருவாக்கவும்.</string>
+    <string name="btn_create_account">விவசாயி கணக்கை உருவாக்கவும்</string>
+    <string name="login_title">உங்கள் கணக்கில் உள்நுழையவும்</string>
+    <string name="login_subtitle">OTP பெற உங்கள் மொபைல் எண்ணை உள்ளிடவும்</string>
+    <string name="mobile_number_placeholder">மொபைல் எண்</string>
+    <string name="btn_send_otp">OTP அனுப்பவும்</string>
+    <string name="registration_title">விவசாயி பதிவு</string>
+</resources>

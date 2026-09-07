@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">किसान सिंक</string>
+    <string name="language_selection_title">अपनी भाषा चुनें</string>
+    <string name="language_selection_subtitle">किसान सिंक में उपयोग के लिए अपनी पसंदीदा भाषा चुनें।</string>
+    <string name="btn_continue">आगे बढ़ें</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="auth_entry_title">किसान सिंक में आपका स्वागत है</string>
+    <string name="auth_entry_subtitle">अपने किसान खाते का प्रबंधन करें और खरीद सेवाओं तक एक ही स्थान पर पहुँच प्राप्त करें।</string>
+    <string name="btn_login">लॉगिन</string>
+    <string name="auth_entry_new_user_prompt">किसान सिंक पर नए हैं? अपना किसान खाता बनाएँ।</string>
+    <string name="btn_create_account">किसान खाता बनाएँ</string>
+    <string name="login_title">वापसी पर आपका स्वागत है</string>
+    <string name="login_subtitle">अपने पंजीकृत मोबाइल नंबर या किसान आईडी और 6-अंकीय पिन का उपयोग करके लॉग इन करें।</string>
+    <string name="identifier_label">मोबाइल नंबर या किसान आईडी</string>
+    <string name="pin_label">6-अंकीय सुरक्षा पिन</string>
+    <string name="btn_sign_in">साइन इन करें</string>
+    <string name="registration_title">किसान पंजीकरण</string>
+</resources>

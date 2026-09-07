@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">Kissaan Sync</string>
+    <string name="language_selection_title">Choose your language</string>
+    <string name="language_selection_subtitle">Select the language you prefer to use in Kissaan Sync.</string>
+    <string name="btn_continue">Continue</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="lang_tamil">தமிழ்</string>
+    <string name="lang_malayalam">മലയാളം</string>
+    <string name="lang_marathi">मराठी</string>
+    <string name="lang_bengali">বাংলা</string>
+    <string name="lang_kannada">ಕನ್ನಡ</string>
+    <string name="auth_entry_title">Welcome to Kissaan Sync</string>
+    <string name="auth_entry_subtitle">Manage your farmer account and access procurement services in one place.</string>
+    <string name="btn_login">Login</string>
+    <string name="auth_entry_new_user_prompt">New to Kissaan Sync? Create your farmer account.</string>
+    <string name="btn_create_account">Create Farmer Account</string>
+    <string name="login_title">Welcome Back</string>
+    <string name="login_subtitle">Log in using your registered Mobile Number or Farmer ID and your 6-digit PIN.</string>
+    <string name="identifier_label">Mobile Number or Farmer ID</string>
+    <string name="pin_label">6-Digit Security PIN</string>
+    <string name="btn_sign_in">Sign In</string>
+    <string name="registration_title">Farmer Registration</string>
+</resources>

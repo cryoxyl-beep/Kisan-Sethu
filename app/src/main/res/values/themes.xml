@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.KisanSethu" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+</resources>

@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">కిసాన్ సింక్</string>
+    <string name="language_selection_title">మీ భాషను ఎంచుకోండి</string>
+    <string name="language_selection_subtitle">కిసాన్ సింక్‌లో మీరు ఉపయోగించాలనుకుంటున్న భాషను ఎంచుకోండి.</string>
+    <string name="btn_continue">కొనసాగించు</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="auth_entry_title">కిసాన్ సింక్‌కు స్వాగతం</string>
+    <string name="auth_entry_subtitle">మీ రైతు ఖాతాను నిర్వహించండి మరియు కొనుగోలు సేవలను ఒకే చోట పొందండి.</string>
+    <string name="btn_login">లాగిన్</string>
+    <string name="auth_entry_new_user_prompt">కిసాన్ సింక్‌కు కొత్తా? మీ రైతు ఖాతాను సృష్టించండి.</string>
+    <string name="btn_create_account">రైతు ఖాతాను సృష్టించండి</string>
+    <string name="login_title">తిరిగి స్వాగతం</string>
+    <string name="login_subtitle">మీ నమోదు చేసిన మొబైల్ సంఖ్య లేదా రైతు ID మరియు 6-అంకెల PIN ఉపయోగించి లాగిన్ చేయండి.</string>
+    <string name="identifier_label">మొబైల్ సంఖ్య లేదా రైతు ID</string>
+    <string name="pin_label">6-అంకెల రక్షణ PIN</string>
+    <string name="btn_sign_in">సైన్ ఇన్ చేయండి</string>
+    <string name="registration_title">రైతు నమోదు</string>
+</resources>

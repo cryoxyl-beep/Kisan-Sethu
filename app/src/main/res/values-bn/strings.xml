@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">কিসান সিঙ্ক</string>
+    <string name="language_selection_title">আপনার ভাষা নির্বাচন করুন</string>
+    <string name="language_selection_subtitle">কিসান সিঙ্কে ব্যবহারের জন্য আপনার পছন্দের ভাষাটি নির্বাচন করুন।</string>
+    <string name="btn_continue">এগিয়ে যান</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_telugu">తెలుగు</string>
+    <string name="lang_tamil">தமிழ்</string>
+    <string name="lang_malayalam">മലയാളം</string>
+    <string name="lang_marathi">মরাঠি</string>
+    <string name="lang_bengali">বাংলা</string>
+    <string name="lang_kannada">ಕನ್ನಡ</string>
+    <string name="auth_entry_title">কিসান সিঙ্কে স্বাগতম</string>
+    <string name="auth_entry_subtitle">আপনার কৃষক অ্যাকাউন্ট পরিচালনা করুন এবং এক জায়গায় সংগ্রহ পরিষেবাগুলি ব্যবহার করুন।</string>
+    <string name="btn_login">লগইন</string>
+    <string name="auth_entry_new_user_prompt">কিসান সিঙ্কে নতুন? আপনার কৃষক অ্যাকাউন্ট তৈরি করুন।</string>
+    <string name="btn_create_account">কৃষক অ্যাকাউন্ট তৈরি করুন</string>
+    <string name="login_title">আপনার অ্যাকাউন্টে লগইন করুন</string>
+    <string name="login_subtitle">ওটিপি পেতে আপনার মোবাইল নম্বর লিখুন</string>
+    <string name="mobile_number_placeholder">মোবাইল নম্বর</string>
+    <string name="btn_send_otp">ওটিপি পাঠান</string>
+    <string name="registration_title">কৃষক নিবন্ধন</string>
+</resources>
