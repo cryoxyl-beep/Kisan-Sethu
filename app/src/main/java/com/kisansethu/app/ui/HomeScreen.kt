@@ -29,10 +29,12 @@ import com.kisansethu.app.ui.home.DashboardScreen
 import com.kisansethu.app.ui.home.PaymentPlaceholder
 import com.kisansethu.app.ui.home.ProfilePlaceholder
 
+import androidx.compose.material.icons.rounded.Article
+
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : BottomNavItem("home_dashboard", Icons.Rounded.Home, "Home")
     object Bookings : BottomNavItem("home_bookings", Icons.Rounded.CalendarToday, "Bookings")
-    object Payment : BottomNavItem("home_payment", Icons.Rounded.AccountBalanceWallet, "Payments")
+    object Schemes : BottomNavItem("home_schemes", Icons.Rounded.Article, "Schemes")
     object Profile : BottomNavItem("home_profile", Icons.Rounded.Person, "Profile")
 }
 
@@ -51,7 +53,7 @@ fun HomeScreen(
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Bookings,
-        BottomNavItem.Payment,
+        BottomNavItem.Schemes,
         BottomNavItem.Profile
     )
 
@@ -114,7 +116,7 @@ fun HomeScreen(
                         farmerName = farmerName
                     )
                 }
-                composable(BottomNavItem.Payment.route) { PaymentPlaceholder() }
+                composable(BottomNavItem.Schemes.route) { PaymentPlaceholder() }
                 composable(BottomNavItem.Profile.route) { 
                     ProfilePlaceholder(
                         onSignOut = onSignOut,
