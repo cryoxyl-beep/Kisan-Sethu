@@ -43,6 +43,7 @@ fun SlotBookingsScreen(
         SlotBookingRoute.LIST -> {
             SlotBookingsListScreen(
                 farmerId = farmerId,
+                farmerName = farmerName,
                 onBookSlotClick = { currentRoute = SlotBookingRoute.WIZARD },
                 onViewBookingClick = { booking ->
                     selectedBooking = booking
