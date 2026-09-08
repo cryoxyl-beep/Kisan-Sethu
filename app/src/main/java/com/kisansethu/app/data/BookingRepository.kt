@@ -45,31 +45,45 @@ class BookingRepository {
         }
     }
     
-    suspend fun getUpcomingBookings(farmerId: String): Result<List<Booking>> {
-        return try {
-            val snapshot = bookingsCollection
-                .whereEqualTo("farmerId", farmerId)
-                .whereEqualTo("status", BookingStatus.BOOKED.name)
-                .get()
-                .await()
-            val bookings = snapshot.toObjects(Booking::class.java).sortedBy { it.bookingDate }
-            Result.success(bookings)
-        } catch (e: Exception) {
-            Result.failure(e)
+    fun getUpcomingBookingsRealtime(farmerId: String): kotlinx.coroutines.flow.Flow<Result<List<Booking>>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = bookingsCollection
+            .whereEqualTo("farmerId", farmerId)
+            .whereIn("status", listOf(BookingStatus.BOOKED.name, BookingStatus.CONFIRMED.name))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val bookings = snapshot.toObjects(Booking::class.java).sortedBy { it.bookingDate }
+                    trySend(Result.success(bookings))
+                }
+            }
+        awaitClose {
+            listenerRegistration.remove()
         }
     }
     
-    suspend fun getCompletedBookings(farmerId: String): Result<List<Booking>> {
-        return try {
-            val snapshot = bookingsCollection
-                .whereEqualTo("farmerId", farmerId)
-                .whereEqualTo("status", BookingStatus.COMPLETED.name)
-                .get()
-                .await()
-            val bookings = snapshot.toObjects(Booking::class.java).sortedByDescending { it.bookingDate }
-            Result.success(bookings)
-        } catch (e: Exception) {
-            Result.failure(e)
+    fun getCompletedBookingsRealtime(farmerId: String): kotlinx.coroutines.flow.Flow<Result<List<Booking>>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = bookingsCollection
+            .whereEqualTo("farmerId", farmerId)
+            .whereIn("status", listOf(
+                BookingStatus.COMPLETED.name, 
+                BookingStatus.CANCELLED.name, 
+                BookingStatus.MISSED.name
+            ))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val bookings = snapshot.toObjects(Booking::class.java).sortedByDescending { it.bookingDate }
+                    trySend(Result.success(bookings))
+                }
+            }
+        awaitClose {
+            listenerRegistration.remove()
         }
     }
 

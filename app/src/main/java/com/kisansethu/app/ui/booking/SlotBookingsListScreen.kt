@@ -138,6 +138,24 @@ fun SlotBookingsListScreen(
 
 @Composable
 fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
+    val displayStatus = when (booking.status) {
+        "BOOKED" -> "Booking Pending Confirmation"
+        "CONFIRMED" -> "Booking Confirmed"
+        else -> booking.status
+    }
+    
+    val statusBgColor = if (booking.status == "CONFIRMED") {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    
+    val statusTextColor = if (booking.status == "CONFIRMED") {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onViewClick(booking) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -159,13 +177,13 @@ fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .background(statusBgColor)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = booking.status,
+                        text = displayStatus,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = statusTextColor
                     )
                 }
             }
