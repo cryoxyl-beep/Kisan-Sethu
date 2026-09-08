@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -146,7 +148,7 @@ fun StepIndicator(currentStep: BookingStep) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -206,21 +208,20 @@ fun StepIndicator(currentStep: BookingStep) {
 
 @Composable
 fun BottomBarAction(enabled: Boolean, onClick: () -> Unit, text: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        shadowElevation = 8.dp
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp)
     ) {
-        Box(modifier = Modifier.padding(16.dp)) {
-            Button(
-                onClick = onClick,
-                enabled = enabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(text, style = MaterialTheme.typography.titleMedium)
-            }
+        Button(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(text, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -244,7 +245,7 @@ fun DateSelectionStep(selectedDate: LocalDate?, onDateSelected: (LocalDate) -> U
         
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -291,7 +292,7 @@ fun CentreSelectionStep(
         )
         
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(centres) { centre ->
@@ -356,7 +357,7 @@ fun TimeSlotSelectionStep(
         )
         
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(slots) { slot ->
@@ -422,13 +423,14 @@ fun ProduceSelectionStep(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 116.dp)
     ) {
         Text(
             text = "Produce Details",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(vertical = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         )
         
         ExposedDropdownMenuBox(
@@ -498,7 +500,7 @@ fun ProduceSelectionStep(
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.height(64.dp) // Match text field height
+                modifier = Modifier.weight(1.2f).height(64.dp) // Match text field height
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
                     QuantityUnit.entries.forEach { unit ->
@@ -531,7 +533,8 @@ fun ReviewBookingStep(state: BookingFlowState, onConfirm: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 116.dp)
     ) {
         Text(
             text = "Review Booking",
@@ -595,7 +598,8 @@ fun BookingSuccessStep(booking: Booking, onBackToHome: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 116.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(

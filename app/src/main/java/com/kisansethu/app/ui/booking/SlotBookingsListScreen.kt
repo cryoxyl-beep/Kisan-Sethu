@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,7 +70,16 @@ fun SlotBookingsListScreen(
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { context ->
+                            com.google.android.material.loadingindicator.LoadingIndicator(context)
+                        },
+                        update = { view ->
+                            view.setIndicatorColor(primaryColor.toArgb())
+                        },
+                        modifier = Modifier.size(64.dp)
+                    )
                 }
             } else if (uiState.error != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -110,7 +120,7 @@ fun SlotBookingsListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(list) { booking ->
