@@ -2,6 +2,7 @@ package com.kisansethu.app.data
 
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.channels.awaitClose
 import java.security.SecureRandom
 
 class BookingRepository {
@@ -69,6 +70,28 @@ class BookingRepository {
             Result.success(bookings)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    fun getBookingRealtime(trackingId: String): kotlinx.coroutines.flow.Flow<Result<Booking>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = bookingsCollection.document(trackingId).addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(Result.failure(error))
+                return@addSnapshotListener
+            }
+            if (snapshot != null && snapshot.exists()) {
+                val booking = snapshot.toObject(Booking::class.java)
+                if (booking != null) {
+                    trySend(Result.success(booking))
+                } else {
+                    trySend(Result.failure(Exception("Failed to parse booking")))
+                }
+            } else {
+                trySend(Result.failure(Exception("Booking not found")))
+            }
+        }
+        awaitClose {
+            listenerRegistration.remove()
         }
     }
 }

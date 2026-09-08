@@ -2,6 +2,7 @@ package com.kisansethu.app.data
 
 enum class BookingStatus {
     BOOKED,
+    CONFIRMED,
     CHECKED_IN,
     WAITING,
     PROCESSING,
