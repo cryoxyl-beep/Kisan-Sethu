@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import com.kisansethu.app.ui.booking.SlotBookingsScreen
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -176,7 +177,7 @@ fun HomeScreen(
                         }
                     )
                 }
-                composable(BottomNavItem.Bookings.route) { SlotBookingsPlaceholder() }
+                composable(BottomNavItem.Bookings.route) { SlotBookingsScreen(farmerId = farmerId, farmerName = farmerName) }
                 composable(BottomNavItem.Payment.route) { PaymentPlaceholder() }
                 composable(BottomNavItem.Profile.route) { ProfilePlaceholder() }
             }
