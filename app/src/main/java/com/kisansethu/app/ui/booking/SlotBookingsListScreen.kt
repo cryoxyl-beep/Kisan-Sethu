@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -24,6 +25,7 @@ import com.kisansethu.app.data.Booking
 fun SlotBookingsListScreen(
     farmerId: String,
     onBookSlotClick: () -> Unit,
+    onViewBookingClick: (Booking) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SlotBookingsViewModel = viewModel()
 ) {
@@ -38,6 +40,7 @@ fun SlotBookingsListScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0.dp),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onBookSlotClick,
@@ -124,7 +127,7 @@ fun SlotBookingsListScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(list) { booking ->
-                            BookingCard(booking)
+                            BookingCard(booking, onViewBookingClick)
                         }
                     }
                 }
@@ -134,9 +137,9 @@ fun SlotBookingsListScreen(
 }
 
 @Composable
-fun BookingCard(booking: Booking) {
+fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onViewClick(booking) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RoundedCornerShape(16.dp)
@@ -239,7 +242,7 @@ fun BookingCard(booking: Booking) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
-                TextButton(onClick = { /* Implement view booking details later */ }) {
+                TextButton(onClick = { onViewClick(booking) }) {
                     Text("View Booking")
                 }
             }

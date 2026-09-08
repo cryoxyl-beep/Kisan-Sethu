@@ -60,9 +60,11 @@ fun BookingFlowScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TopAppBar(
                 title = { Text(if (uiState.confirmedBooking != null) "Booking Confirmed" else "Book a Slot") },
+                windowInsets = WindowInsets(0.dp),
                 navigationIcon = {
                     IconButton(onClick = {
                         if (uiState.currentStep == BookingStep.DATE || uiState.confirmedBooking != null) {
@@ -533,14 +535,13 @@ fun ReviewBookingStep(state: BookingFlowState, onConfirm: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 116.dp)
     ) {
         Text(
             text = "Review Booking",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(vertical = 16.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         
         Card(
@@ -548,15 +549,15 @@ fun ReviewBookingStep(state: BookingFlowState, onConfirm: () -> Unit) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 ReviewItem("Centre", state.selectedCentre?.name ?: "")
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ReviewItem("Date", state.selectedDate?.toString() ?: "")
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ReviewItem("Time", state.selectedSlot?.getDisplayString() ?: "")
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ReviewItem("Crop", state.selectedCrop)
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 ReviewItem("Quantity", "${state.quantity} ${state.quantityUnit.name.lowercase()} (${state.quantityKg} kg)")
             }
         }
@@ -568,15 +569,20 @@ fun ReviewBookingStep(state: BookingFlowState, onConfirm: () -> Unit) {
                 text = state.submissionError,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
         }
         
-        BottomBarAction(
-            enabled = !state.isSubmitting,
+        Button(
             onClick = onConfirm,
-            text = if (state.isSubmitting) "Confirming..." else "Confirm Booking"
-        )
+            enabled = !state.isSubmitting,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(if (state.isSubmitting) "Confirming..." else "Confirm Booking", style = MaterialTheme.typography.titleMedium)
+        }
     }
 }
 
@@ -598,24 +604,23 @@ fun BookingSuccessStep(booking: Booking, onBackToHome: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 116.dp),
+            .padding(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 116.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             Icons.Rounded.CheckCircle, 
             contentDescription = "Success",
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier.size(48.dp)
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Booking Confirmed",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -624,14 +629,14 @@ fun BookingSuccessStep(booking: Booking, onBackToHome: () -> Unit) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 ReviewItem("Centre", booking.centreName)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 ReviewItem("Date & Time", "${booking.bookingDate} | ${booking.slotStartTime} - ${booking.slotEndTime}")
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 ReviewItem("Produce", "${booking.quantity} ${booking.quantityUnit.lowercase()} ${booking.crop}")
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         Text(
             text = "Tracking ID: ${booking.trackingId}",
@@ -639,15 +644,15 @@ fun BookingSuccessStep(booking: Booking, onBackToHome: () -> Unit) {
             fontWeight = FontWeight.Bold
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         
         if (qrCodeBitmap != null) {
             Image(
                 bitmap = qrCodeBitmap,
                 contentDescription = "QR Code",
-                modifier = Modifier.size(180.dp).clip(RoundedCornerShape(8.dp))
+                modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp))
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Show this QR code at the procurement centre.",
                 style = MaterialTheme.typography.bodySmall,
