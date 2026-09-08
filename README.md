@@ -53,3 +53,9 @@ You can download and install the latest compiled APK package directly from this 
 * **Backend / DB:** Firebase Realtime Database
 * **Local Storage:** Jetpack DataStore (Preferences)
 * **Architecture:** MVVM (Model-View-ViewModel) & Compose Navigation Component
+### ?? Procurement Slot Bookings (Phase 2.2)
+* **Smart Booking Flow:** A seamless, 5-step wizard to book procurement slots (Date -> Centre -> Time -> Produce -> Review).
+* **Firebase Firestore Integration:** All bookings are securely persisted to Firestore with a highly optimized data structure.
+* **Auto-generated Tracking IDs:** Creates clean, unique, non-sequential tracking codes (e.g., KS26XXXXXX) that protect personal demographic data.
+* **Integrated QR Generation:** Generates a robust QR code encoding the tracking ID natively on the device using ZXing, ready to be scanned at the procurement centre.
+* **Intelligent Unit Normalization:** Automatically handles agricultural conversions (e.g., Quintal to KG) on the fly.
