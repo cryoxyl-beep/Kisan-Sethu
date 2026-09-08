@@ -41,7 +41,8 @@ fun SlotBookingsListScreen(
             FloatingActionButton(
                 onClick = onBookSlotClick,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.padding(bottom = 96.dp)
             ) {
                 Icon(Icons.Rounded.Add, contentDescription = "Book Slot")
             }
