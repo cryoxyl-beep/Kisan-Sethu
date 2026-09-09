@@ -19,6 +19,7 @@ import com.kisansethu.app.utils.QrCodeGenerator
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,13 +47,14 @@ fun BookingDetailScreen(
     val displayStatus = when (displayBooking.status) {
         "BOOKED" -> "Booking Pending Confirmation"
         "CONFIRMED" -> "Booking Confirmed"
+        "CHECKED_IN" -> "CHECKED IN"
         else -> displayBooking.status
     }
     
-    val statusColor = if (displayBooking.status == "CONFIRMED") {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+    val statusColor = when (displayBooking.status) {
+        "CONFIRMED" -> MaterialTheme.colorScheme.primary
+        "CHECKED_IN" -> Color(0xFF0288D1) // Bright blue to match active checked-in state (adjusts ok on dark mode)
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Scaffold(

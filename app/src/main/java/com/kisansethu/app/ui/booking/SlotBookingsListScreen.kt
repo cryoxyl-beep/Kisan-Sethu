@@ -1,5 +1,6 @@
 package com.kisansethu.app.ui.booking
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,11 +20,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.material.loadingindicator.LoadingIndicator
 import com.kisansethu.app.data.Booking
 
 @Composable
@@ -74,12 +81,12 @@ fun SlotBookingsListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Header with status bar padding for breathing room
+            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 24.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
@@ -161,8 +168,8 @@ fun SlotBookingsListScreen(
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    androidx.compose.ui.viewinterop.AndroidView(
-                        factory = { context -> com.google.android.material.loadingindicator.LoadingIndicator(context) },
+                    AndroidView(
+                        factory = { context -> LoadingIndicator(context) },
                         update = { view -> view.setIndicatorColor(DarkGreen.toArgb()) },
                         modifier = Modifier.size(64.dp)
                     )
@@ -200,7 +207,7 @@ fun SlotBookingsListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 116.dp),
+                        contentPadding = PaddingValues(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 120.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(list) { booking ->
@@ -219,6 +226,9 @@ fun SlotBookingsListScreen(
 
 @Composable
 fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Unit) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+
     val DarkGreen = if (isDark) Color(0xFF81C784) else Color(0xFF2E5E41)
     val LightGreenPill = if (isDark) Color(0xFF1B3B26) else Color(0xFFE5F0E8)
     val DarkCharcoal = if (isDark) Color(0xFFE0E0E0) else Color(0xFF1E1E1E)
@@ -228,124 +238,223 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
     val displayStatus = when (booking.status) {
         "BOOKED" -> "Booking Pending"
         "CONFIRMED" -> "Booking Confirmed"
+        "CHECKED_IN" -> "CHECKED IN"
         else -> booking.status
     }
     
     val isConfirmed = booking.status == "CONFIRMED"
-    val statusBgColor = if (isConfirmed) LightGreenPill else (if (isDark) Color(0xFF4A3B1C) else Color(0xFFFFF3E0))
-    val statusTextColor = if (isConfirmed) DarkGreen else (if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100))
+    val isCheckedIn = booking.status == "CHECKED_IN"
+    
+    val statusBgColor = when {
+        isCheckedIn -> if (isDark) Color(0xFF1A3B4D) else Color(0xFFE1F5FE)
+        isConfirmed -> LightGreenPill
+        else -> if (isDark) Color(0xFF4A3B1C) else Color(0xFFFFF3E0)
+    }
+    val statusTextColor = when {
+        isCheckedIn -> if (isDark) Color(0xFF81D4FA) else Color(0xFF0277BD)
+        isConfirmed -> DarkGreen
+        else -> if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+    }
 
-    // Subtitle inference (fallback to generic if not formatted as expected)
     val locationSubtitle = if (booking.centreName.contains(",")) {
         booking.centreName.substringAfter(",").trim()
     } else {
-        val firstWord = booking.centreName.split(" ").firstOrNull() ?: "Centre"
-        "$firstWord, Telangana"
+        "Medchal, Telangana"
     }
-    val cleanTitle = if (booking.centreName.contains(",")) booking.centreName.substringBefore(",") else booking.centreName
+    val cleanTitle = if (booking.centreName.contains(",")) {
+        booking.centreName.substringBefore(",").trim()
+    } else {
+        booking.centreName
+    }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onViewClick(booking) },
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            // Header Row: Fix Text Wrapping & Overlap
+            // Header Row: Icon + Title/Location on left, Status Badge on right
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Row(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                    Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape).background(LightGreenPill),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Rounded.Storefront, contentDescription = null, tint = DarkGreen, modifier = Modifier.size(24.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = cleanTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkCharcoal,
-                            lineHeight = 22.sp
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = locationSubtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MutedGray
-                        )
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(LightGreenPill),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Rounded.Storefront,
+                        contentDescription = null,
+                        tint = DarkGreen,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text(
+                        text = cleanTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkCharcoal,
+                        lineHeight = 22.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = locationSubtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MutedGray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
                 
-                // Status Badge fixed to top right
+                // Status Badge
                 Box(
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(statusBgColor).padding(horizontal = 10.dp, vertical = 6.dp)
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(statusBgColor)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isConfirmed) {
-                            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = statusTextColor, modifier = Modifier.size(14.dp))
+                        if (isConfirmed || isCheckedIn) {
+                            val icon = if (isCheckedIn) Icons.Rounded.Verified else Icons.Rounded.CheckCircle
+                            Icon(icon, contentDescription = null, tint = statusTextColor, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                         }
-                        Text(text = displayStatus, style = MaterialTheme.typography.labelSmall, color = statusTextColor, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = displayStatus,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = statusTextColor,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Grid Details with Soft Icon Backgrounds
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    DetailItem(icon = Icons.Rounded.CalendarToday, label = "Date", value = booking.bookingDate, isDark = isDark)
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    DetailItem(icon = Icons.Rounded.AccessTime, label = "Time", value = "${booking.slotStartTime} - ${booking.slotEndTime}", isDark = isDark)
                 }
             }
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    DetailItem(icon = Icons.Rounded.Eco, label = "Crop", value = booking.crop, isDark = isDark)
+            // Grid Details
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    DetailItem(
+                        icon = Icons.Rounded.CalendarToday,
+                        label = "Date",
+                        value = booking.bookingDate,
+                        isDark = isDark
+                    )
                 }
-                Column(modifier = Modifier.weight(1f)) {
-                    DetailItem(icon = Icons.Rounded.MonitorWeight, label = "Quantity", value = "${booking.quantity} ${booking.quantityUnit.lowercase()}", isDark = isDark)
+                Box(modifier = Modifier.weight(1f)) {
+                    DetailItem(
+                        icon = Icons.Rounded.AccessTime,
+                        label = "Time",
+                        value = "${booking.slotStartTime} - ${booking.slotEndTime}",
+                        isDark = isDark
+                    )
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    DetailItem(
+                        icon = Icons.Rounded.Eco,
+                        label = "Crop",
+                        value = booking.crop,
+                        isDark = isDark
+                    )
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    val formattedQty = if (booking.quantity % 1.0 == 0.0) {
+                        booking.quantity.toInt().toString()
+                    } else {
+                        booking.quantity.toString()
+                    }
+                    DetailItem(
+                        icon = Icons.Rounded.MonitorWeight,
+                        label = "Quantity",
+                        value = "$formattedQty ${booking.quantityUnit.lowercase()}",
+                        isDark = isDark
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(color = if (isDark) Color(0xFF333333) else Color.LightGray.copy(alpha = 0.4f))
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Footer Row
+            // Footer Row: Copyable Booking ID & Functional View Details Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            clipboardManager.setText(AnnotatedString(booking.trackingId))
+                            Toast.makeText(context, "Booking ID copied to clipboard", Toast.LENGTH_SHORT).show()
+                        }
+                        .padding(vertical = 4.dp, horizontal = 4.dp)
+                ) {
                     Text(text = "Booking ID", style = MaterialTheme.typography.labelSmall, color = MutedGray)
                     Spacer(modifier = Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = booking.trackingId, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = DarkCharcoal)
+                        Text(
+                            text = booking.trackingId,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkCharcoal
+                        )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Icon(Icons.Rounded.ContentCopy, contentDescription = "Copy ID", tint = MutedGray, modifier = Modifier.size(14.dp))
+                        Icon(
+                            Icons.Rounded.ContentCopy,
+                            contentDescription = "Copy ID",
+                            tint = MutedGray,
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
                 }
+
                 Box(
-                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(LightGreenPill).padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(LightGreenPill)
+                        .clickable { onViewClick(booking) }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("View Details", style = MaterialTheme.typography.labelMedium, color = DarkGreen, fontWeight = FontWeight.Bold)
+                        Text(
+                            "View Details",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = DarkGreen,
+                            fontWeight = FontWeight.Bold
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, tint = DarkGreen, modifier = Modifier.size(14.dp))
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowForward,
+                            contentDescription = null,
+                            tint = DarkGreen,
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
                 }
             }
@@ -354,24 +463,37 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
 }
 
 @Composable
-fun DetailItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String, isDark: Boolean) {
+fun DetailItem(icon: ImageVector, label: String, value: String, isDark: Boolean) {
     val DarkGreen = if (isDark) Color(0xFF81C784) else Color(0xFF2E5E41)
     val LightGreenPill = if (isDark) Color(0xFF1B3B26) else Color(0xFFE5F0E8)
     val DarkCharcoal = if (isDark) Color(0xFFE0E0E0) else Color(0xFF1E1E1E)
     val MutedGray = if (isDark) Color(0xFFA0A0A0) else Color(0xFF6E6E6E)
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Box(
-            modifier = Modifier.size(36.dp).clip(CircleShape).background(LightGreenPill),
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(LightGreenPill),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, contentDescription = null, tint = DarkGreen, modifier = Modifier.size(18.dp))
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(text = label, style = MaterialTheme.typography.labelSmall, color = MutedGray)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = DarkCharcoal)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                fontWeight = FontWeight.SemiBold,
+                color = DarkCharcoal,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

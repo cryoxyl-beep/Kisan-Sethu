@@ -48,7 +48,7 @@ class BookingRepository {
     fun getUpcomingBookingsRealtime(farmerId: String): kotlinx.coroutines.flow.Flow<Result<List<Booking>>> = kotlinx.coroutines.flow.callbackFlow {
         val listenerRegistration = bookingsCollection
             .whereEqualTo("farmerId", farmerId)
-            .whereIn("status", listOf(BookingStatus.BOOKED.name, BookingStatus.CONFIRMED.name))
+            .whereIn("status", listOf(BookingStatus.BOOKED.name, BookingStatus.CONFIRMED.name, BookingStatus.CHECKED_IN.name))
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(Result.failure(error))
