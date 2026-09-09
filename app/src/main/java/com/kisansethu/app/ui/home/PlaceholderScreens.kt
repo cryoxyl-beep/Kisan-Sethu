@@ -1,38 +1,33 @@
 package com.kisansethu.app.ui.home
 
-import android.content.pm.ApplicationInfo
-import android.provider.Settings
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.google.firebase.database.FirebaseDatabase
-import com.kisansethu.app.fcm.FcmManager
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun SlotBookingsPlaceholder(modifier: Modifier = Modifier) {
@@ -64,6 +59,7 @@ fun PaymentPlaceholder(modifier: Modifier = Modifier) {
 
 @Composable
 fun ProfilePlaceholder(
+    farmerName: String = "Sai Santosh",
     farmerId: String = "",
     modifier: Modifier = Modifier,
     onSignOut: (() -> Unit)? = null,
@@ -71,118 +67,236 @@ fun ProfilePlaceholder(
     onToggleTheme: (() -> Unit)? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val displayName = if (farmerName.isNotBlank() && farmerName != "Farmer") farmerName else "Sai Santosh"
+    val displayInitial = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "S"
+    val displayPhone = "+91 98765 43210"
 
-    var currentToken by remember { mutableStateOf("Loading...") }
-    var registrationStatus by remember { mutableStateOf("Checking...") }
-    var lastUpdated by remember { mutableStateOf("-") }
+    val BgColor = Color(0xFFF9FAFB)
+    val CardBg = Color.White
+    val DarkCharcoal = Color(0xFF111827)
+    val MutedGray = Color(0xFF6B7280)
+    val ForestGreen = Color(0xFF134E35)
+    val LogoutRed = Color(0xFFEF4444)
+    val SubtleBorder = Color(0xFFF3F4F6)
 
-    val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-
-    LaunchedEffect(farmerId) {
-        if (isDebug && farmerId.isNotEmpty()) {
-            val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
-            val ref = FirebaseDatabase.getInstance("https://kissaan-sync-default-rtdb.asia-southeast1.firebasedatabase.app")
-                .getReference("farmers").child(farmerId).child("devices").child(deviceId)
-            
-            ref.get().addOnSuccessListener { snapshot ->
-                if (snapshot.exists()) {
-                    currentToken = snapshot.child("fcmToken").getValue(String::class.java) ?: "Not found"
-                    registrationStatus = "Registered in RTDB"
-                    val timestamp = snapshot.child("updatedAt").getValue(Long::class.java) ?: 0L
-                    lastUpdated = if (timestamp > 0) {
-                        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
-                    } else "Unknown"
-                } else {
-                    currentToken = "None"
-                    registrationStatus = "Not registered in RTDB"
-                    lastUpdated = "-"
-                }
-            }.addOnFailureListener {
-                registrationStatus = "Error checking RTDB: ${it.message}"
-            }
-        }
-    }
-
-    Box(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(BgColor)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
+            .padding(top = 28.dp, bottom = 100.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "Profile",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            if (onSignOut != null) {
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            onClearSession?.invoke()
-                            onSignOut()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Log Out")
-                }
-            }
+        // Header
+        Text(
+            text = "Profile",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = DarkCharcoal
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Manage your account",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Normal,
+            color = MutedGray
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
 
-            if (isDebug) {
-                Spacer(modifier = Modifier.height(32.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Developer Debug (FCM)",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Status: $registrationStatus", style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Last Updated: $lastUpdated", style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(4.dp))
+        // User Details Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardBg),
+            border = BorderStroke(1.dp, SubtleBorder),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Avatar
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(ForestGreen),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = "Token: $currentToken", 
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        text = displayInitial,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                OutlinedButton(
-                    onClick = {
-                        registrationStatus = "Refreshing..."
-                        FcmManager.registerFcmToken(context, farmerId)
-                        // Wait a sec then reload UI
-                        coroutineScope.launch {
-                            kotlinx.coroutines.delay(2000)
-                            val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
-                            val ref = FirebaseDatabase.getInstance("https://kissaan-sync-default-rtdb.asia-southeast1.firebasedatabase.app")
-                                .getReference("farmers").child(farmerId).child("devices").child(deviceId)
-                            ref.get().addOnSuccessListener { snapshot ->
-                                if (snapshot.exists()) {
-                                    currentToken = snapshot.child("fcmToken").getValue(String::class.java) ?: "Not found"
-                                    registrationStatus = "Refreshed & Registered"
-                                    val timestamp = snapshot.child("updatedAt").getValue(Long::class.java) ?: 0L
-                                    lastUpdated = if (timestamp > 0) {
-                                        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestamp))
-                                    } else "Unknown"
-                                }
-                            }
-                        }
-                    }
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Name & Phone
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text("Refresh FCM Token")
+                    Text(
+                        text = displayName,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkCharcoal
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = displayPhone,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = MutedGray
+                    )
+                }
+
+                // Edit Button
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF3F4F6))
+                        .clickable { /* Edit Profile */ },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Edit Profile",
+                        tint = Color(0xFF1F2937),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Menu Options Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardBg),
+            border = BorderStroke(1.dp, SubtleBorder),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                ProfileMenuItem(
+                    icon = Icons.Outlined.Language,
+                    title = "Language",
+                    trailingText = "English",
+                    onClick = { /* Language selection */ }
+                )
+                ProfileMenuItem(
+                    icon = Icons.Outlined.Notifications,
+                    title = "Notifications",
+                    onClick = { /* Notifications */ }
+                )
+                ProfileMenuItem(
+                    icon = Icons.AutoMirrored.Outlined.HelpOutline,
+                    title = "Help & Support",
+                    onClick = { /* Help & Support */ }
+                )
+                ProfileMenuItem(
+                    icon = Icons.Outlined.Info,
+                    title = "About",
+                    onClick = { /* About */ }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Logout Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .clickable {
+                    coroutineScope.launch {
+                        onClearSession?.invoke()
+                        onSignOut?.invoke()
+                    }
+                },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardBg),
+            border = BorderStroke(1.dp, SubtleBorder),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Logout,
+                    contentDescription = "Logout",
+                    tint = LogoutRed,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = "Logout",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = LogoutRed
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileMenuItem(
+    icon: ImageVector,
+    title: String,
+    trailingText: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = Color(0xFF1F2937),
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color(0xFF111827),
+            modifier = Modifier.weight(1f)
+        )
+        if (trailingText != null) {
+            Text(
+                text = trailingText,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFF6B7280)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Icon(
+            imageVector = Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = Color(0xFF9CA3AF),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }

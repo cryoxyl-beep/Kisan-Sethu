@@ -3,10 +3,11 @@ package com.kisansethu.app.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountBalanceWallet
-import androidx.compose.material.icons.rounded.CalendarToday
-import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -18,7 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,12 +34,10 @@ import com.kisansethu.app.ui.home.DashboardScreen
 import com.kisansethu.app.ui.home.PaymentPlaceholder
 import com.kisansethu.app.ui.home.ProfilePlaceholder
 
-import androidx.compose.material.icons.rounded.Article
-
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
-    object Home : BottomNavItem("home_dashboard", Icons.Rounded.Home, "Home")
-    object Bookings : BottomNavItem("home_bookings", Icons.Rounded.CalendarToday, "Bookings")
-    object Payments : BottomNavItem("home_payments", Icons.Rounded.AccountBalanceWallet, "Payments")
+    object Home : BottomNavItem("home_dashboard", Icons.Outlined.Home, "Home")
+    object Bookings : BottomNavItem("home_bookings", Icons.Outlined.CalendarToday, "Bookings")
+    object Payments : BottomNavItem("home_payments", Icons.AutoMirrored.Outlined.ReceiptLong, "Payments")
     object Profile : BottomNavItem("home_profile", Icons.Rounded.Person, "Profile")
 }
 
@@ -59,20 +62,33 @@ fun HomeScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color(0xFFF9FAFB),
         bottomBar = {
             val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                containerColor = Color.White,
+                tonalElevation = 6.dp
             ) {
                 items.forEach { item ->
+                    val isSelected = currentRoute == item.route
                     NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
-                        selected = currentRoute == item.route,
+                        icon = { 
+                            Icon(
+                                item.icon, 
+                                contentDescription = item.label,
+                                modifier = Modifier.size(24.dp)
+                            ) 
+                        },
+                        label = { 
+                            Text(
+                                item.label,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 12.sp
+                            ) 
+                        },
+                        selected = isSelected,
                         onClick = {
                             bottomNavController.navigate(item.route) {
                                 popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
@@ -81,11 +97,11 @@ fun HomeScreen(
                             }
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            selectedIconColor = Color(0xFF134E35),
+                            selectedTextColor = Color(0xFF134E35),
+                            indicatorColor = Color(0xFFDDEFE3),
+                            unselectedIconColor = Color(0xFF6B7280),
+                            unselectedTextColor = Color(0xFF6B7280)
                         )
                     )
                 }
@@ -119,6 +135,7 @@ fun HomeScreen(
                 composable(BottomNavItem.Payments.route) { PaymentPlaceholder() }
                 composable(BottomNavItem.Profile.route) { 
                     ProfilePlaceholder(
+                        farmerName = farmerName,
                         farmerId = farmerId,
                         onSignOut = onSignOut,
                         onClearSession = onClearSession,
