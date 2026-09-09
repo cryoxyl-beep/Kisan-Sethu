@@ -5,6 +5,7 @@ enum class BookingStatus {
     CONFIRMED,
     CHECKED_IN,
     WAITING,
+    NOW_SERVING,
     PROCESSING,
     COMPLETED,
     MISSED,
@@ -55,5 +56,7 @@ data class Booking(
     val quantityKg: Double = 0.0,
     val status: String = BookingStatus.BOOKED.name,
     val qrCodeData: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val queueToken: String = "",
+    val checkedInAt: Long = 0L
 )

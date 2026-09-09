@@ -87,6 +87,31 @@ class BookingRepository {
         }
     }
 
+    fun getLiveQueueRealtime(centreId: String, bookingDate: String): kotlinx.coroutines.flow.Flow<Result<List<Booking>>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = bookingsCollection
+            .whereEqualTo("centreId", centreId)
+            .whereEqualTo("bookingDate", bookingDate)
+            .whereIn("status", listOf(
+                BookingStatus.WAITING.name,
+                BookingStatus.NOW_SERVING.name,
+                BookingStatus.PROCESSING.name
+            ))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    // Sort by checkedInAt so the queue is in order
+                    val queue = snapshot.toObjects(Booking::class.java).sortedBy { it.checkedInAt }
+                    trySend(Result.success(queue))
+                }
+            }
+        awaitClose {
+            listenerRegistration.remove()
+        }
+    }
+
     fun getBookingRealtime(trackingId: String): kotlinx.coroutines.flow.Flow<Result<Booking>> = kotlinx.coroutines.flow.callbackFlow {
         val listenerRegistration = bookingsCollection.document(trackingId).addSnapshotListener { snapshot, error ->
             if (error != null) {

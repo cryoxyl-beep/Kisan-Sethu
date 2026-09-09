@@ -43,6 +43,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.zxing:core:3.5.3")
 
     implementation(platform(libs.androidx.compose.bom))
