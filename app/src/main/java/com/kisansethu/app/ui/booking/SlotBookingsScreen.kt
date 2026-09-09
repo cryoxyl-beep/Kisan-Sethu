@@ -6,7 +6,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-
 import com.kisansethu.app.data.Booking
 
 enum class SlotBookingRoute { LIST, WIZARD, DETAIL }
@@ -15,25 +14,44 @@ enum class SlotBookingRoute { LIST, WIZARD, DETAIL }
 fun SlotBookingsScreen(
     farmerId: String,
     farmerName: String,
+    initialRoute: SlotBookingRoute = SlotBookingRoute.LIST,
+    initialSelectedBooking: Booking? = null,
+    onResetInitialRoute: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    var currentRoute by remember { mutableStateOf(SlotBookingRoute.LIST) }
-    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
+    var currentRoute by remember(initialRoute) { mutableStateOf(initialRoute) }
+    var selectedBooking by remember(initialSelectedBooking) { mutableStateOf(initialSelectedBooking) }
 
     when (currentRoute) {
         SlotBookingRoute.WIZARD -> {
+            androidx.activity.compose.BackHandler {
+                currentRoute = SlotBookingRoute.LIST
+                onResetInitialRoute?.invoke()
+            }
             BookingFlowScreen(
                 farmerId = farmerId,
                 farmerName = farmerName,
-                onClose = { currentRoute = SlotBookingRoute.LIST },
+                onClose = {
+                    currentRoute = SlotBookingRoute.LIST
+                    onResetInitialRoute?.invoke()
+                },
                 modifier = modifier
             )
         }
         SlotBookingRoute.DETAIL -> {
+            androidx.activity.compose.BackHandler {
+                selectedBooking = null
+                currentRoute = SlotBookingRoute.LIST
+                onResetInitialRoute?.invoke()
+            }
             selectedBooking?.let { booking ->
                 BookingDetailScreen(
                     booking = booking,
-                    onBack = { currentRoute = SlotBookingRoute.LIST },
+                    onBack = {
+                        selectedBooking = null
+                        currentRoute = SlotBookingRoute.LIST
+                        onResetInitialRoute?.invoke()
+                    },
                     modifier = modifier
                 )
             } ?: run {

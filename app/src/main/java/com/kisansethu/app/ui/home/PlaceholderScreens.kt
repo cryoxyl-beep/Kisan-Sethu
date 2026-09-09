@@ -108,10 +108,10 @@ fun PaymentPlaceholder(
 
             Text(
                 text = "Payments",
-                fontSize = 32.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
-                color = forestGreen,
-                letterSpacing = (-0.4).sp
+                color = Color(0xFF1E1E1E),
+                letterSpacing = (-0.3).sp
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -230,7 +230,7 @@ fun PaymentPlaceholder(
                     text = "Recent Payments",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = forestGreen
+                    color = Color(0xFF1E1E1E)
                 )
                 Text(
                     text = "View all",
@@ -271,19 +271,17 @@ fun PaymentPlaceholder(
 
 @Composable
 fun PaymentTransactionCard(item: PaymentTransaction) {
-    val forestGreen = Color(0xFF1B3B26)
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 2.dp,
+                elevation = 1.dp,
                 shape = RoundedCornerShape(16.dp),
                 ambientColor = Color(0x14000000),
                 spotColor = Color(0x14000000)
             ),
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFFBFCFB),
+        color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFE8EEEA)),
         shadowElevation = 0.dp,
         tonalElevation = 0.dp
@@ -318,7 +316,7 @@ fun PaymentTransactionCard(item: PaymentTransaction) {
                     text = item.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = forestGreen,
+                    color = Color(0xFF1E1E1E),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -336,7 +334,7 @@ fun PaymentTransactionCard(item: PaymentTransaction) {
                     text = item.amount,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = forestGreen
+                    color = Color(0xFF1E1E1E)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Surface(
@@ -383,63 +381,61 @@ fun ProfilePlaceholder(
                 .padding(horizontal = 20.dp)
         ) {
             // 1. Top spacer directly below status bar padding
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // 2. HEADER SECTION
             Text(
                 text = "Profile",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF0F172A)
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E1E1E)
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Manage your account",
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
-                color = Color(0xFF64748B)
+                color = Color(0xFF6E6E6E)
             )
             Spacer(modifier = Modifier.height(20.dp))
 
             // 3. PROFILE CARD
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = Color.White,
                 shadowElevation = 0.dp,
-                tonalElevation = 0.dp
+                tonalElevation = 0.dp,
+                border = BorderStroke(1.dp, Color(0xFFE8EEEA))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Avatar
                     Surface(
-                        modifier = Modifier.size(60.dp),
+                        modifier = Modifier.size(56.dp),
                         shape = CircleShape,
-                        color = Color(0xFF14532D)
+                        color = Color(0xFF1B3B26)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = displayInitial,
                                 color = Color.White,
-                                fontSize = 24.sp,
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
 
-                    // Details
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = displayName,
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A),
+                            color = Color(0xFF1E1E1E),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -448,27 +444,18 @@ fun ProfilePlaceholder(
                             text = displayPhone,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Normal,
-                            color = Color(0xFF64748B)
+                            color = Color(0xFF6E6E6E)
                         )
                     }
 
-                    // Edit Button
-                    Surface(
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Edit Profile",
+                        tint = Color(0xFF334155),
                         modifier = Modifier
-                            .size(40.dp)
-                            .clickable { /* Edit Profile */ },
-                        shape = CircleShape,
-                        color = Color(0xFFF1F5F9)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Outlined.Edit,
-                                contentDescription = "Edit Profile",
-                                tint = Color(0xFF334155),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
+                            .size(22.dp)
+                            .clickable { /* Edit Profile */ }
+                    )
                 }
             }
 
@@ -478,10 +465,11 @@ fun ProfilePlaceholder(
             // 5. MENU SETTINGS CARD
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = Color.White,
                 shadowElevation = 0.dp,
-                tonalElevation = 0.dp
+                tonalElevation = 0.dp,
+                border = BorderStroke(1.dp, Color(0xFFE8EEEA))
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // Row 1: Language
@@ -646,10 +634,11 @@ fun ProfilePlaceholder(
                             onSignOut?.invoke()
                         }
                     },
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = Color.White,
                 shadowElevation = 0.dp,
-                tonalElevation = 0.dp
+                tonalElevation = 0.dp,
+                border = BorderStroke(1.dp, Color(0xFFE8EEEA))
             ) {
                 Row(
                     modifier = Modifier

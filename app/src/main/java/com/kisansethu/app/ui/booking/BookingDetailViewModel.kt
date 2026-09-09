@@ -26,7 +26,7 @@ class BookingDetailViewModel : ViewModel() {
     private var listenerJob: Job? = null
 
     fun startListening(trackingId: String) {
-        if (currentTrackingId == trackingId) return
+        if (currentTrackingId == trackingId && listenerJob?.isActive == true) return
         currentTrackingId = trackingId
         
         listenerJob?.cancel()
@@ -34,7 +34,7 @@ class BookingDetailViewModel : ViewModel() {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         listenerJob = viewModelScope.launch {
-            repository.getBookingRealtime(trackingId).collect { result ->
+            repository.getAuthoritativeBookingRealtime(trackingId).collect { result ->
                 if (result.isSuccess) {
                     _uiState.update { it.copy(isLoading = false, booking = result.getOrNull()) }
                 } else {

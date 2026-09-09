@@ -15,16 +15,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -38,6 +45,7 @@ import com.kisansethu.app.utils.QrCodeGenerator
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.unit.sp
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,10 +68,18 @@ fun BookingFlowScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = Color.White,
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TopAppBar(
-                title = { Text(if (uiState.confirmedBooking != null) "Booking Confirmed" else "Book a Slot") },
+                title = {
+                    Text(
+                        text = if (uiState.confirmedBooking != null) "Booking Confirmed" else "Book a Procurement",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF1E1E1E)
+                    )
+                },
                 windowInsets = WindowInsets(0.dp),
                 navigationIcon = {
                     IconButton(onClick = {
@@ -73,11 +89,15 @@ fun BookingFlowScreen(
                             viewModel.goBack()
                         }
                     }) {
-                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color(0xFF1E1E1E)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.White
                 )
             )
         }
@@ -88,7 +108,7 @@ fun BookingFlowScreen(
                 .padding(paddingValues)
         ) {
             if (uiState.confirmedBooking == null) {
-                StepIndicator(currentStep = uiState.currentStep)
+                CompactStepIndicator(currentStep = uiState.currentStep)
             }
 
             Box(modifier = Modifier
@@ -145,63 +165,38 @@ fun BookingFlowScreen(
 }
 
 @Composable
-fun StepIndicator(currentStep: BookingStep) {
-    val steps = BookingStep.entries
+fun CompactStepIndicator(currentStep: BookingStep) {
+    val ForestGreen = Color(0xFF1B3B26)
+    val Inactive = Color(0xFFD5D9D6)
+    // Visual progress matches mock: 3 dots; map 5 booking steps into 3 visual stages
+    val visualIndex = when (currentStep) {
+        BookingStep.DATE, BookingStep.CENTRE -> 0
+        BookingStep.SLOT, BookingStep.PRODUCE -> 1
+        BookingStep.REVIEW -> 2
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 48.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
-        steps.forEachIndexed { index, step ->
-            val isSelected = step == currentStep
-            val isPast = step.ordinal < currentStep.ordinal
-            
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        repeat(3) { index ->
+            val active = index <= visualIndex
+            Box(
+                modifier = Modifier
+                    .size(if (index == visualIndex) 12.dp else 8.dp)
+                    .clip(CircleShape)
+                    .background(if (active) ForestGreen else Inactive)
+            )
+            if (index < 2) {
                 Box(
                     modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when {
-                                isPast -> MaterialTheme.colorScheme.primary
-                                isSelected -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isPast) {
-                        Icon(
-                            Icons.Rounded.CheckCircle, 
-                            contentDescription = null, 
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    } else {
-                        Text(
-                            text = "${index + 1}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = step.title,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = if (isSelected || isPast) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            if (index < steps.size - 1) {
-                HorizontalDivider(
-                    modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp)
-                        .offset(y = (-8).dp),
-                    color = if (isPast) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                        .height(2.dp)
+                        .padding(horizontal = 6.dp)
+                        .background(if (index < visualIndex) ForestGreen else Inactive)
                 )
             }
         }
@@ -209,11 +204,18 @@ fun StepIndicator(currentStep: BookingStep) {
 }
 
 @Composable
+fun StepIndicator(currentStep: BookingStep) {
+    CompactStepIndicator(currentStep)
+}
+
+@Composable
 fun BottomBarAction(enabled: Boolean, onClick: () -> Unit, text: String) {
+    val ForestGreen = Color(0xFF1B3B26)
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp)
+            .background(Color.White)
+            .padding(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 24.dp)
     ) {
         Button(
             onClick = onClick,
@@ -221,9 +223,29 @@ fun BottomBarAction(enabled: Boolean, onClick: () -> Unit, text: String) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ForestGreen,
+                disabledContainerColor = ForestGreen.copy(alpha = 0.4f)
+            )
         ) {
-            Text(text, style = MaterialTheme.typography.titleMedium)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = text,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(20.dp)
+                )
+            }
         }
     }
 }
@@ -281,60 +303,142 @@ fun DateSelectionStep(selectedDate: LocalDate?, onDateSelected: (LocalDate) -> U
 
 @Composable
 fun CentreSelectionStep(
-    centres: List<ProcurementCentre>, 
-    selectedCentre: ProcurementCentre?, 
+    centres: List<ProcurementCentre>,
+    selectedCentre: ProcurementCentre?,
     onCentreSelected: (ProcurementCentre) -> Unit
 ) {
+    val ForestGreen = Color(0xFF1B3B26)
+    val SoftMint = Color(0xFFE5F3EA)
+    val MutedGray = Color(0xFF6E6E6E)
+    var query by remember { mutableStateOf("") }
+    val filtered = remember(centres, query) {
+        if (query.isBlank()) centres
+        else centres.filter {
+            it.name.contains(query, ignoreCase = true) ||
+                it.location.contains(query, ignoreCase = true)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = "Select Procurement Centre",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-        )
-        
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            Text(
+                text = "Select Procurement Centre",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E1E1E)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Choose a nearby centre",
+                fontSize = 14.sp,
+                color = MutedGray
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(Color(0xFFF2F4F3))
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Rounded.Search,
+                    contentDescription = null,
+                    tint = Color(0xFF9AA39D),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                BasicTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        fontSize = 15.sp,
+                        color = Color(0xFF1E1E1E)
+                    ),
+                    cursorBrush = SolidColor(ForestGreen),
+                    modifier = Modifier.weight(1f),
+                    decorationBox = { inner ->
+                        if (query.isEmpty()) {
+                            Text(
+                                text = "Search centre or district",
+                                fontSize = 15.sp,
+                                color = Color(0xFF9AA39D)
+                            )
+                        }
+                        inner()
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 116.dp),
+            contentPadding = PaddingValues(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(centres) { centre ->
+            items(filtered) { centre ->
                 val isSelected = centre == selectedCentre
                 val isFull = centre.status == "Full"
-                
-                Card(
+
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(enabled = !isFull) { onCentreSelected(centre) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                    ),
                     shape = RoundedCornerShape(16.dp),
-                    border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                    color = Color.White,
+                    border = BorderStroke(
+                        width = if (isSelected) 1.5.dp else 1.dp,
+                        color = if (isSelected) ForestGreen else Color(0xFFE8EEEA)
+                    ),
+                    shadowElevation = 0.dp,
+                    tonalElevation = 0.dp
                 ) {
-                    Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                        Text(
-                            text = centre.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isFull) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f) else MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = centre.location,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(isFull) 0.5f else 1f)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(
-                                text = "Available slots: ${centre.availableSlots}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=if(isFull) 0.5f else 1f)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(SoftMint),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.AccountBalance,
+                                contentDescription = null,
+                                tint = Color(0xFF2E5E41),
+                                modifier = Modifier.size(22.dp)
                             )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = centre.status,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (isFull) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                text = centre.name,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isFull) Color(0xFF9AA39D) else Color(0xFF1E1E1E)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = centre.location,
+                                fontSize = 13.sp,
+                                color = if (isFull) Color(0xFFB0B8B3) else MutedGray
+                            )
+                        }
+                        if (isSelected) {
+                            Icon(
+                                Icons.Rounded.CheckCircle,
+                                contentDescription = null,
+                                tint = ForestGreen,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }

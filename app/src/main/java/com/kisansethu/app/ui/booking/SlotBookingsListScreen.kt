@@ -1,6 +1,6 @@
 package com.kisansethu.app.ui.booking
 
-import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -19,10 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,6 +27,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.loadingindicator.LoadingIndicator
 import com.kisansethu.app.data.Booking
+import com.kisansethu.app.data.BookingStatus
+import com.kisansethu.app.data.getDisplayStatus
+import com.kisansethu.app.data.normalizeStatus
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -44,10 +43,9 @@ fun SlotBookingsListScreen(
     viewModel: SlotBookingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
-    val DarkGreen = Color(0xFF2E5E41)
-    val LightGreenPill = Color(0xFFE5F0E8)
-    val OffWhiteBg = Color(0xFFFAFAFA)
+
+    val DarkGreen = Color(0xFF1B3B26)
+    val OffWhiteBg = Color(0xFFF7F8F7)
     val DarkCharcoal = Color(0xFF1E1E1E)
     val MutedGray = Color(0xFF6E6E6E)
 
@@ -61,18 +59,20 @@ fun SlotBookingsListScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = OffWhiteBg,
         floatingActionButton = {
-            if (selectedTabIndex == 0) {
-                FloatingActionButton(
-                    onClick = onBookSlotClick,
-                    containerColor = DarkGreen,
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .padding(bottom = 16.dp, end = 8.dp)
-                        .size(64.dp)
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Book Slot", modifier = Modifier.size(32.dp))
-                }
+            FloatingActionButton(
+                onClick = onBookSlotClick,
+                containerColor = DarkGreen,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier
+                    .padding(bottom = 8.dp, end = 4.dp)
+                    .size(60.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Add,
+                    contentDescription = "Book Slot",
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     ) { paddingValues ->
@@ -80,34 +80,35 @@ fun SlotBookingsListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .statusBarsPadding()
         ) {
-            // Header
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 Text(
                     text = "My Bookings",
-                    style = MaterialTheme.typography.headlineMedium,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     color = DarkCharcoal
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Track all your procurements",
-                    style = MaterialTheme.typography.bodyLarge,
+                    fontSize = 14.sp,
                     color = MutedGray
                 )
             }
 
-            // Custom Tabs
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = OffWhiteBg,
                 contentColor = DarkGreen,
-                modifier = Modifier.padding(horizontal = 24.dp),
-                divider = { HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f)) },
+                modifier = Modifier.padding(horizontal = 20.dp),
+                divider = {
+                    HorizontalDivider(color = Color(0xFFE5E7EB), thickness = 1.dp)
+                },
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
@@ -122,7 +123,8 @@ fun SlotBookingsListScreen(
                     text = {
                         Text(
                             "Upcoming",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
                             color = if (selectedTabIndex == 0) DarkGreen else MutedGray
                         )
                     }
@@ -133,14 +135,15 @@ fun SlotBookingsListScreen(
                     text = {
                         Text(
                             "Completed",
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
                             color = if (selectedTabIndex == 1) DarkGreen else MutedGray
                         )
                     }
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -155,27 +158,31 @@ fun SlotBookingsListScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Unable to load booking details.", color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadBookings(farmerId) }, colors = ButtonDefaults.buttonColors(containerColor = DarkGreen)) {
+                        Button(
+                            onClick = { viewModel.loadBookings(farmerId) },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreen),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
                             Text("Retry", color = Color.White)
                         }
                     }
                 }
             } else {
                 val list = if (selectedTabIndex == 0) uiState.upcomingBookings else uiState.completedBookings
-                
+
                 if (list.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No ${if(selectedTabIndex == 0) "upcoming" else "completed"} bookings",
-                                style = MaterialTheme.typography.titleMedium,
+                                text = if (selectedTabIndex == 0) "No upcoming bookings" else "No completed bookings",
+                                fontSize = 16.sp,
                                 color = DarkCharcoal,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Book a procurement slot to see it here.",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = if (selectedTabIndex == 0) "Book a procurement slot to see it here." else "Completed procurements will appear here.",
+                                fontSize = 14.sp,
                                 color = MutedGray
                             )
                         }
@@ -183,10 +190,15 @@ fun SlotBookingsListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 24.dp, top = 8.dp, end = 24.dp, bottom = 120.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        contentPadding = PaddingValues(
+                            start = 20.dp,
+                            top = 8.dp,
+                            end = 20.dp,
+                            bottom = 120.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(list) { booking ->
+                        items(list, key = { it.trackingId }) { booking ->
                             BookingCard(
                                 booking = booking,
                                 onViewClick = onViewBookingClick
@@ -210,45 +222,35 @@ fun formatBookingDate(dateStr: String): String {
 
 @Composable
 fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
-    val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
-
-    val DarkGreen = Color(0xFF2E5E41)
-    val LightGreenPill = Color(0xFFE5F0E8)
+    val SoftMint = Color(0xFFE5F3EA)
     val DarkCharcoal = Color(0xFF1E1E1E)
     val MutedGray = Color(0xFF6E6E6E)
-    val CardBg = Color.White
 
-    val displayStatus = when (booking.status) {
-        "BOOKED" -> {
-            val isToday = booking.bookingDate == LocalDate.now().toString()
-            if (isToday) "Booked" else "Scheduled"
-        }
-        "COMPLETED" -> "Completed"
-        "CONFIRMED" -> "Confirmed"
-        "CHECKED_IN" -> "Checked In"
-        else -> booking.status
+    val normStatus = normalizeStatus(booking.status)
+    val displayStatus = getDisplayStatus(booking)
+
+    val statusBgColor = when (normStatus) {
+        BookingStatus.COMPLETED.name, BookingStatus.CONFIRMED.name -> SoftMint
+        BookingStatus.PROCESSING.name -> Color(0xFFE1F5FE)
+        BookingStatus.NOW_SERVING.name -> Color(0xFFE8F5E9)
+        BookingStatus.WAITING.name -> Color(0xFFFFF3E0)
+        BookingStatus.CHECKED_IN.name, BookingStatus.BOOKED.name -> Color(0xFFE3F2FD)
+        else -> Color(0xFFF5F5F5)
     }
-    
-    val isCompleted = booking.status == "COMPLETED"
-    val isBooked = booking.status == "BOOKED"
-    val isConfirmed = booking.status == "CONFIRMED"
-    
-    val statusBgColor = when {
-        isCompleted || isConfirmed -> LightGreenPill
-        isBooked -> Color(0xFFE3F2FD) // light blue
-        else -> Color(0xFFFFF3E0)
-    }
-    val statusTextColor = when {
-        isCompleted || isConfirmed -> DarkGreen
-        isBooked -> Color(0xFF1565C0) // blue
-        else -> Color(0xFFE65100)
+
+    val statusTextColor = when (normStatus) {
+        BookingStatus.COMPLETED.name, BookingStatus.CONFIRMED.name -> Color(0xFF1F6B45)
+        BookingStatus.PROCESSING.name -> Color(0xFF0277BD)
+        BookingStatus.NOW_SERVING.name -> Color(0xFF2E7D32)
+        BookingStatus.WAITING.name -> Color(0xFFE65100)
+        BookingStatus.CHECKED_IN.name, BookingStatus.BOOKED.name -> Color(0xFF1565C0)
+        else -> Color(0xFF757575)
     }
 
     val locationSubtitle = if (booking.centreName.contains(",")) {
         booking.centreName.substringAfter(",").trim()
     } else {
-        "Medchal, Telangana"
+        "Procurement Centre"
     }
     val cleanTitle = if (booking.centreName.contains(",")) {
         booking.centreName.substringBefore(",").trim()
@@ -256,108 +258,144 @@ fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
         booking.centreName
     }
 
+    val formattedQty = if (booking.quantity % 1.0 == 0.0) {
+        "${booking.quantity.toInt()}.0"
+    } else {
+        booking.quantity.toString()
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onViewClick(booking) },
-        colors = CardDefaults.cardColors(containerColor = CardBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(20.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onViewClick(booking) },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, Color(0xFFE8EEEA))
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            // Header Row: Icon + Title/Location on left, Status Badge on bottom of title
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(SoftMint),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(LightGreenPill),
-                    contentAlignment = Alignment.Center
+                Icon(
+                    Icons.Outlined.AccountBalance,
+                    contentDescription = null,
+                    tint = Color(0xFF2E5E41),
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = cleanTitle,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkCharcoal,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = locationSubtitle,
+                    fontSize = 13.sp,
+                    color = MutedGray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Rounded.Storefront,
-                        contentDescription = null,
-                        tint = DarkGreen,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = cleanTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkCharcoal,
-                        lineHeight = 22.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = locationSubtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MutedGray,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(statusBgColor)
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = statusBgColor
                     ) {
                         Text(
                             text = displayStatus,
-                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 11.sp,
                             color = statusTextColor,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
+
+                    Text(
+                        text = "ID: ${booking.trackingId}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MutedGray
+                    )
                 }
-                
-                Icon(
-                    Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = MutedGray
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            val formattedQty = if (booking.quantity % 1.0 == 0.0) {
-                booking.quantity.toInt().toString()
-            } else {
-                booking.quantity.toString()
-            }
-            
-            Text(
-                text = "${booking.crop} • $formattedQty ${booking.quantityUnit.lowercase()}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = DarkCharcoal
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Rounded.CalendarToday,
-                    contentDescription = null,
-                    tint = MutedGray,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
+
+                if (normStatus == BookingStatus.PROCESSING.name) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Your procurement process has started.",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = statusTextColor
+                    )
+                }
+
+                if (booking.queueToken.isNotEmpty() && (normStatus == BookingStatus.WAITING.name || normStatus == BookingStatus.NOW_SERVING.name || normStatus == BookingStatus.PROCESSING.name)) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Token: ${booking.queueToken}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B3B26)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 Text(
-                    text = "${formatBookingDate(booking.bookingDate)} • ${booking.slotStartTime}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MutedGray
+                    text = "${booking.crop} • $formattedQty ${booking.quantityUnit.lowercase()}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = DarkCharcoal
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Rounded.CalendarToday,
+                        contentDescription = null,
+                        tint = MutedGray,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${formatBookingDate(booking.bookingDate)} • ${booking.slotStartTime}",
+                        fontSize = 12.sp,
+                        color = MutedGray
+                    )
+                }
             }
+
+            Icon(
+                Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFFB0B8B3),
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .size(22.dp)
+            )
         }
     }
 }
