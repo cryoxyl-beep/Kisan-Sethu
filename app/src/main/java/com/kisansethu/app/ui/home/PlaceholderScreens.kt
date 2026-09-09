@@ -1,6 +1,5 @@
 package com.kisansethu.app.ui.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,22 +8,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -71,232 +69,311 @@ fun ProfilePlaceholder(
     val displayInitial = displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "S"
     val displayPhone = "+91 98765 43210"
 
-    val BgColor = Color(0xFFF9FAFB)
-    val CardBg = Color.White
-    val DarkCharcoal = Color(0xFF111827)
-    val MutedGray = Color(0xFF6B7280)
-    val ForestGreen = Color(0xFF134E35)
-    val LogoutRed = Color(0xFFEF4444)
-    val SubtleBorder = Color(0xFFF3F4F6)
-
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(BgColor)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(top = 28.dp, bottom = 100.dp)
+            .background(Color(0xFFF8F9FA))
+            .statusBarsPadding()
     ) {
-        // Header
-        Text(
-            text = "Profile",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = DarkCharcoal
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Manage your account",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Normal,
-            color = MutedGray
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // User Details Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBg),
-            border = BorderStroke(1.dp, SubtleBorder),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
         ) {
-            Row(
+            // 1. Top spacer directly below status bar padding
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 2. HEADER SECTION
+            Text(
+                text = "Profile",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F172A)
+            )
+            Text(
+                text = "Manage your account",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFF64748B)
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. PROFILE CARD
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Avatar
+                    Surface(
+                        modifier = Modifier.size(60.dp),
+                        shape = CircleShape,
+                        color = Color(0xFF14532D)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = displayInitial,
+                                color = Color.White,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Details
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = displayName,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = displayPhone,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+
+                    // Edit Button
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable { /* Edit Profile */ },
+                        shape = CircleShape,
+                        color = Color(0xFFF1F5F9)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Outlined.Edit,
+                                contentDescription = "Edit Profile",
+                                tint = Color(0xFF334155),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. SPACING
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 5. MENU SETTINGS CARD
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Row 1: Language
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* Language */ }
+                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Language,
+                            contentDescription = "Language",
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Language",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp)
+                        )
+                        Text(
+                            text = "English",
+                            fontSize = 14.sp,
+                            color = Color(0xFF64748B),
+                            modifier = Modifier.padding(end = 6.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    HorizontalDivider(
+                        thickness = 0.8.dp,
+                        color = Color(0xFFF1F5F9),
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+
+                    // Row 2: Notifications
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* Notifications */ }
+                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Notifications,
+                            contentDescription = "Notifications",
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Notifications",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    HorizontalDivider(
+                        thickness = 0.8.dp,
+                        color = Color(0xFFF1F5F9),
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+
+                    // Row 3: Help & Support
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* Help & Support */ }
+                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
+                            contentDescription = "Help & Support",
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "Help & Support",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    HorizontalDivider(
+                        thickness = 0.8.dp,
+                        color = Color(0xFFF1F5F9),
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+
+                    // Row 4: About
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* About */ }
+                            .padding(horizontal = 20.dp, vertical = 18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "About",
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "About",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF0F172A),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            // 6. LOGOUT CARD
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .clickable {
+                        coroutineScope.launch {
+                            onClearSession?.invoke()
+                            onSignOut?.invoke()
+                        }
+                    },
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp
             ) {
-                // Avatar
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(ForestGreen),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = displayInitial,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Name & Phone
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = displayName,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = DarkCharcoal
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = displayPhone,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = MutedGray
-                    )
-                }
-
-                // Edit Button
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFF3F4F6))
-                        .clickable { /* Edit Profile */ },
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Edit Profile",
-                        tint = Color(0xFF1F2937),
-                        modifier = Modifier.size(18.dp)
+                        imageVector = Icons.AutoMirrored.Outlined.Logout,
+                        contentDescription = "Logout",
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = "Logout",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFEF4444),
+                        modifier = Modifier.padding(start = 16.dp)
                     )
                 }
             }
+
+            // Bottom spacer so content doesn't get clipped by bottom navigation bar
+            Spacer(modifier = Modifier.height(24.dp))
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Menu Options Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBg),
-            border = BorderStroke(1.dp, SubtleBorder),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                ProfileMenuItem(
-                    icon = Icons.Outlined.Language,
-                    title = "Language",
-                    trailingText = "English",
-                    onClick = { /* Language selection */ }
-                )
-                ProfileMenuItem(
-                    icon = Icons.Outlined.Notifications,
-                    title = "Notifications",
-                    onClick = { /* Notifications */ }
-                )
-                ProfileMenuItem(
-                    icon = Icons.AutoMirrored.Outlined.HelpOutline,
-                    title = "Help & Support",
-                    onClick = { /* Help & Support */ }
-                )
-                ProfileMenuItem(
-                    icon = Icons.Outlined.Info,
-                    title = "About",
-                    onClick = { /* About */ }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Logout Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .clickable {
-                    coroutineScope.launch {
-                        onClearSession?.invoke()
-                        onSignOut?.invoke()
-                    }
-                },
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBg),
-            border = BorderStroke(1.dp, SubtleBorder),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Logout,
-                    contentDescription = "Logout",
-                    tint = LogoutRed,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "Logout",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = LogoutRed
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProfileMenuItem(
-    icon: ImageVector,
-    title: String,
-    trailingText: String? = null,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = title,
-            tint = Color(0xFF1F2937),
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF111827),
-            modifier = Modifier.weight(1f)
-        )
-        if (trailingText != null) {
-            Text(
-                text = trailingText,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color(0xFF6B7280)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = Color(0xFF9CA3AF),
-            modifier = Modifier.size(20.dp)
-        )
     }
 }
