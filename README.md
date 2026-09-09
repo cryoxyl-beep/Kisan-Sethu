@@ -64,3 +64,9 @@ You can download and install the latest compiled APK package directly from this 
 * **Real-time Status Sync:** The app connects directly to Firestore `addSnapshotListener` streams to reflect live queue status instantly across `WAITING`, `NOW_SERVING`, `PROCESSING`, and `COMPLETED`.
 * **Live Dashboard Widget:** Dynamic queue card displaying your active token, current serving token, calculated queue position, and exact number of farmers ahead of you based on check-in timestamps.
 * **FCM Push Notifications:** Fully integrated Android client architecture for Firebase Cloud Messaging (FCM). Automatically binds the device token (`ANDROID_ID`) to the Firebase Realtime Database for targeted backend trigger alerts without hardcoding sensitive server keys.
+
+### ? Phase A5.4 UI Refactor & Strict Lifecycle Routing
+* **Jetpack Compose Overhaul:** Complete redesign of the UI with pixel-perfect alignment to the Figma reference. Clean 'Sexy Light Mode' exclusively, utilizing precise hex spacing, badges, and typography.
+* **Strict Firebase Lifecycle Binding:** Bookings dynamically shift between the active Home screen (CONFIRMED, CHECKED_IN, WAITING, NOW_SERVING, PROCESSING) and the Upcoming/Completed segmented tabs based entirely on their real-time Firestore status. No mock states, no offline lag.
+* **Action Navigation Fixes:** The floating + button now correctly jumps straight into the WIZARD routing for New Procurement flow, and the 'Schemes' navigation label was globally corrected to 'Payments'.
+

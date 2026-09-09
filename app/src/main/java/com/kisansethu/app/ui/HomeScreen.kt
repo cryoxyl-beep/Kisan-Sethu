@@ -34,7 +34,7 @@ import androidx.compose.material.icons.rounded.Article
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : BottomNavItem("home_dashboard", Icons.Rounded.Home, "Home")
     object Bookings : BottomNavItem("home_bookings", Icons.Rounded.CalendarToday, "Bookings")
-    object Schemes : BottomNavItem("home_schemes", Icons.Rounded.Article, "Schemes")
+    object Payments : BottomNavItem("home_payments", Icons.Rounded.AccountBalanceWallet, "Payments")
     object Profile : BottomNavItem("home_profile", Icons.Rounded.Person, "Profile")
 }
 
@@ -53,7 +53,7 @@ fun HomeScreen(
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Bookings,
-        BottomNavItem.Schemes,
+        BottomNavItem.Payments,
         BottomNavItem.Profile
     )
 
@@ -116,9 +116,10 @@ fun HomeScreen(
                         farmerName = farmerName
                     )
                 }
-                composable(BottomNavItem.Schemes.route) { PaymentPlaceholder() }
+                composable(BottomNavItem.Payments.route) { PaymentPlaceholder() }
                 composable(BottomNavItem.Profile.route) { 
                     ProfilePlaceholder(
+                        farmerId = farmerId,
                         onSignOut = onSignOut,
                         onClearSession = onClearSession,
                         onToggleTheme = onToggleTheme

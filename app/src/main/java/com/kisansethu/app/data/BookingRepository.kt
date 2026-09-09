@@ -48,7 +48,7 @@ class BookingRepository {
     fun getUpcomingBookingsRealtime(farmerId: String): kotlinx.coroutines.flow.Flow<Result<List<Booking>>> = kotlinx.coroutines.flow.callbackFlow {
         val listenerRegistration = bookingsCollection
             .whereEqualTo("farmerId", farmerId)
-            .whereIn("status", listOf(BookingStatus.BOOKED.name, BookingStatus.CONFIRMED.name, BookingStatus.CHECKED_IN.name))
+            .whereIn("status", listOf(BookingStatus.BOOKED.name))
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(Result.failure(error))
@@ -57,6 +57,33 @@ class BookingRepository {
                 if (snapshot != null) {
                     val bookings = snapshot.toObjects(Booking::class.java).sortedBy { it.bookingDate }
                     trySend(Result.success(bookings))
+                }
+            }
+        awaitClose {
+            listenerRegistration.remove()
+        }
+    }
+    
+    fun getActiveBookingRealtime(farmerId: String): kotlinx.coroutines.flow.Flow<Result<Booking?>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = bookingsCollection
+            .whereEqualTo("farmerId", farmerId)
+            .whereIn("status", listOf(
+                BookingStatus.CONFIRMED.name,
+                BookingStatus.CHECKED_IN.name,
+                BookingStatus.WAITING.name,
+                BookingStatus.NOW_SERVING.name,
+                BookingStatus.PROCESSING.name
+            ))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && !snapshot.isEmpty) {
+                    val booking = snapshot.toObjects(Booking::class.java).firstOrNull()
+                    trySend(Result.success(booking))
+                } else {
+                    trySend(Result.success(null))
                 }
             }
         awaitClose {

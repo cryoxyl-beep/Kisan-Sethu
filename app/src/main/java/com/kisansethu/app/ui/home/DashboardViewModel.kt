@@ -26,6 +26,8 @@ data class LiveQueueData(
 data class DashboardUiState(
     val farmerName: String = "",
     val farmerId: String = "",
+    val hasActiveBooking: Boolean = false,
+    val activeBooking: com.kisansethu.app.data.Booking? = null,
     val hasActiveQueue: Boolean = false,
     val liveQueueData: LiveQueueData? = null
 )
@@ -47,21 +49,42 @@ class DashboardViewModel : ViewModel() {
             farmerId = id
         )
         
-        observeMyQueueStatus(id)
+        observeMyActiveBooking(id)
     }
 
-    private fun observeMyQueueStatus(farmerId: String) {
+    private fun observeMyActiveBooking(farmerId: String) {
         myBookingsJob?.cancel()
         myBookingsJob = viewModelScope.launch {
-            repository.getFarmerActiveQueueEntry(farmerId).collect { result ->
+            repository.getActiveBookingRealtime(farmerId).collect { result ->
                 if (result.isSuccess) {
-                    val activeQueueEntry = result.getOrNull()
+                    val activeBooking = result.getOrNull()
 
-                    if (activeQueueEntry != null) {
-                        observeLiveQueue(activeQueueEntry)
+                    if (activeBooking != null) {
+                        _uiState.value = _uiState.value.copy(
+                            hasActiveBooking = true,
+                            activeBooking = activeBooking
+                        )
+                        // If it's in a queue state, observe the live queue
+                        val isQueueState = activeBooking.status in listOf(
+                            BookingStatus.WAITING.name,
+                            BookingStatus.NOW_SERVING.name,
+                            BookingStatus.PROCESSING.name,
+                            BookingStatus.CHECKED_IN.name // Checked in might not have queue data yet, but we can try
+                        )
+                        if (isQueueState) {
+                            observeLiveQueue(activeBooking)
+                        } else {
+                            liveQueueJob?.cancel()
+                            _uiState.value = _uiState.value.copy(
+                                hasActiveQueue = false,
+                                liveQueueData = null
+                            )
+                        }
                     } else {
                         liveQueueJob?.cancel()
                         _uiState.value = _uiState.value.copy(
+                            hasActiveBooking = false,
+                            activeBooking = null,
                             hasActiveQueue = false,
                             liveQueueData = null
                         )
@@ -71,22 +94,19 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
-    private fun observeLiveQueue(myQueueEntry: QueueEntry) {
+    private fun observeLiveQueue(activeBooking: com.kisansethu.app.data.Booking) {
         liveQueueJob?.cancel()
         liveQueueJob = viewModelScope.launch {
-            repository.getLiveQueueRealtime(myQueueEntry.centreId, myQueueEntry.procurementDate).collect { result ->
+            repository.getLiveQueueRealtime(activeBooking.centreId, activeBooking.bookingDate).collect { result ->
                 if (result.isSuccess) {
                     val queue = result.getOrNull() ?: emptyList()
                     
-                    // The queue is already sorted by checkedInAt from the repository
-                    val myIndex = queue.indexOfFirst { it.id == myQueueEntry.id }
+                    val myIndex = queue.indexOfFirst { it.farmerId == activeBooking.farmerId }
                     
                     val myPosition = if (myIndex >= 0) myIndex + 1 else 0
                     
-                    // People ahead are the ones before me in the queue
                     val farmersAhead = if (myIndex > 0) myIndex else 0
                     
-                    // Current serving token: the first one with NOW_SERVING or PROCESSING
                     val currentServing = queue.firstOrNull { 
                         it.status == BookingStatus.NOW_SERVING.name || 
                         it.status == BookingStatus.PROCESSING.name 
@@ -95,14 +115,14 @@ class DashboardViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(
                         hasActiveQueue = true,
                         liveQueueData = LiveQueueData(
-                            centreName = myQueueEntry.centreName,
-                            bookingDate = myQueueEntry.procurementDate,
-                            timeSlot = "${myQueueEntry.slotStartTime} - ${myQueueEntry.slotEndTime}",
-                            myToken = myQueueEntry.queueToken.ifEmpty { myQueueEntry.id },
+                            centreName = activeBooking.centreName,
+                            bookingDate = activeBooking.bookingDate,
+                            timeSlot = "${activeBooking.slotStartTime} - ${activeBooking.slotEndTime}",
+                            myToken = activeBooking.queueToken.ifEmpty { activeBooking.trackingId },
                             currentServingToken = currentServing,
                             farmersAhead = farmersAhead,
                             myPosition = myPosition,
-                            queueStatus = myQueueEntry.status
+                            queueStatus = activeBooking.status
                         )
                     )
                 }

@@ -116,13 +116,6 @@ fun ProfilePlaceholder(
             )
             Spacer(modifier = Modifier.height(32.dp))
             
-            if (onToggleTheme != null) {
-                OutlinedButton(onClick = onToggleTheme) {
-                    Text("Toggle Dark/Light Mode")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            
             if (onSignOut != null) {
                 Button(
                     onClick = {

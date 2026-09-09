@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
             val context = LocalContext.current
             val userPreferencesRepository = remember { UserPreferencesRepository(context) }
             val isDarkThemePref by userPreferencesRepository.isDarkTheme.collectAsState(initial = null)
-            val darkTheme = isDarkThemePref ?: isSystemInDarkTheme()
+            val darkTheme = false
             val coroutineScope = rememberCoroutineScope()
 
             KisanSethuTheme(

@@ -2,9 +2,7 @@ package com.kisansethu.app.ui.booking
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +31,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.loadingindicator.LoadingIndicator
 import com.kisansethu.app.data.Booking
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SlotBookingsListScreen(
@@ -43,15 +44,12 @@ fun SlotBookingsListScreen(
     viewModel: SlotBookingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isDark = isSystemInDarkTheme()
-
-    val DarkGreen = if (isDark) Color(0xFF81C784) else Color(0xFF2E5E41)
-    val LightGreenPill = if (isDark) Color(0xFF1B3B26) else Color(0xFFE5F0E8)
-    val OffWhiteBg = if (isDark) Color(0xFF121212) else Color(0xFFFAFAFA)
-    val DarkCharcoal = if (isDark) Color(0xFFE0E0E0) else Color(0xFF1E1E1E)
-    val MutedGray = if (isDark) Color(0xFFA0A0A0) else Color(0xFF6E6E6E)
-    val CardBg = if (isDark) Color(0xFF1E1E1E) else Color.White
-    val BorderColor = if (isDark) Color(0xFF333333) else Color.LightGray.copy(alpha = 0.3f)
+    
+    val DarkGreen = Color(0xFF2E5E41)
+    val LightGreenPill = Color(0xFFE5F0E8)
+    val OffWhiteBg = Color(0xFFFAFAFA)
+    val DarkCharcoal = Color(0xFF1E1E1E)
+    val MutedGray = Color(0xFF6E6E6E)
 
     LaunchedEffect(farmerId) {
         viewModel.loadBookings(farmerId)
@@ -63,16 +61,18 @@ fun SlotBookingsListScreen(
         modifier = modifier.fillMaxSize(),
         containerColor = OffWhiteBg,
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onBookSlotClick,
-                containerColor = DarkGreen,
-                contentColor = if (isDark) Color(0xFF1E1E1E) else Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .padding(bottom = 16.dp, end = 8.dp)
-                    .size(64.dp)
-            ) {
-                Icon(Icons.Rounded.Add, contentDescription = "Book Slot", modifier = Modifier.size(32.dp))
+            if (selectedTabIndex == 0) {
+                FloatingActionButton(
+                    onClick = onBookSlotClick,
+                    containerColor = DarkGreen,
+                    contentColor = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp, end = 8.dp)
+                        .size(64.dp)
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Book Slot", modifier = Modifier.size(32.dp))
+                }
             }
         }
     ) { paddingValues ->
@@ -82,86 +82,62 @@ fun SlotBookingsListScreen(
                 .padding(paddingValues)
         ) {
             // Header
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
-                Column {
-                    Text(text = "Hello,", style = MaterialTheme.typography.bodyLarge, color = MutedGray)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = farmerName,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkCharcoal
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(imageVector = Icons.Rounded.Eco, contentDescription = null, tint = DarkGreen, modifier = Modifier.size(24.dp))
-                    }
-                    Text(text = "Here are your bookings", style = MaterialTheme.typography.bodyMedium, color = MutedGray)
-                }
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(LightGreenPill),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = farmerName.firstOrNull()?.toString() ?: "F",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = DarkGreen,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Text(
+                    text = "My Bookings",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkCharcoal
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Track all your procurements",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MutedGray
+                )
             }
 
             // Custom Tabs
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(CardBg)
-                    .border(1.dp, BorderColor, RoundedCornerShape(24.dp))
-                    .padding(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = OffWhiteBg,
+                contentColor = DarkGreen,
+                modifier = Modifier.padding(horizontal = 24.dp),
+                divider = { HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f)) },
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = DarkGreen,
+                        height = 3.dp
+                    )
+                }
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (selectedTabIndex == 0) DarkGreen else Color.Transparent)
-                        .clickable { selectedTabIndex = 0 },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Upcoming",
-                        color = if (selectedTabIndex == 0) (if(isDark) Color(0xFF1E1E1E) else Color.White) else MutedGray,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(if (selectedTabIndex == 1) DarkGreen else Color.Transparent)
-                        .clickable { selectedTabIndex = 1 },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Completed",
-                        color = if (selectedTabIndex == 1) (if(isDark) Color(0xFF1E1E1E) else Color.White) else MutedGray,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                Tab(
+                    selected = selectedTabIndex == 0,
+                    onClick = { selectedTabIndex = 0 },
+                    text = {
+                        Text(
+                            "Upcoming",
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedTabIndex == 0) DarkGreen else MutedGray
+                        )
+                    }
+                )
+                Tab(
+                    selected = selectedTabIndex == 1,
+                    onClick = { selectedTabIndex = 1 },
+                    text = {
+                        Text(
+                            "Completed",
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedTabIndex == 1) DarkGreen else MutedGray
+                        )
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -180,7 +156,7 @@ fun SlotBookingsListScreen(
                         Text("Unable to load booking details.", color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.loadBookings(farmerId) }, colors = ButtonDefaults.buttonColors(containerColor = DarkGreen)) {
-                            Text("Retry", color = if (isDark) Color(0xFF1E1E1E) else Color.White)
+                            Text("Retry", color = Color.White)
                         }
                     }
                 }
@@ -213,7 +189,6 @@ fun SlotBookingsListScreen(
                         items(list) { booking ->
                             BookingCard(
                                 booking = booking,
-                                isDark = isDark,
                                 onViewClick = onViewBookingClick
                             )
                         }
@@ -224,36 +199,50 @@ fun SlotBookingsListScreen(
     }
 }
 
+fun formatBookingDate(dateStr: String): String {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
+        LocalDate.parse(dateStr).format(formatter)
+    } catch (e: Exception) {
+        dateStr
+    }
+}
+
 @Composable
-fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Unit) {
+fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
-    val DarkGreen = if (isDark) Color(0xFF81C784) else Color(0xFF2E5E41)
-    val LightGreenPill = if (isDark) Color(0xFF1B3B26) else Color(0xFFE5F0E8)
-    val DarkCharcoal = if (isDark) Color(0xFFE0E0E0) else Color(0xFF1E1E1E)
-    val MutedGray = if (isDark) Color(0xFFA0A0A0) else Color(0xFF6E6E6E)
-    val CardBg = if (isDark) Color(0xFF1E1E1E) else Color.White
+    val DarkGreen = Color(0xFF2E5E41)
+    val LightGreenPill = Color(0xFFE5F0E8)
+    val DarkCharcoal = Color(0xFF1E1E1E)
+    val MutedGray = Color(0xFF6E6E6E)
+    val CardBg = Color.White
 
     val displayStatus = when (booking.status) {
-        "BOOKED" -> "Booking Pending"
-        "CONFIRMED" -> "Booking Confirmed"
-        "CHECKED_IN" -> "CHECKED IN"
+        "BOOKED" -> {
+            val isToday = booking.bookingDate == LocalDate.now().toString()
+            if (isToday) "Booked" else "Scheduled"
+        }
+        "COMPLETED" -> "Completed"
+        "CONFIRMED" -> "Confirmed"
+        "CHECKED_IN" -> "Checked In"
         else -> booking.status
     }
     
+    val isCompleted = booking.status == "COMPLETED"
+    val isBooked = booking.status == "BOOKED"
     val isConfirmed = booking.status == "CONFIRMED"
-    val isCheckedIn = booking.status == "CHECKED_IN"
     
     val statusBgColor = when {
-        isCheckedIn -> if (isDark) Color(0xFF1A3B4D) else Color(0xFFE1F5FE)
-        isConfirmed -> LightGreenPill
-        else -> if (isDark) Color(0xFF4A3B1C) else Color(0xFFFFF3E0)
+        isCompleted || isConfirmed -> LightGreenPill
+        isBooked -> Color(0xFFE3F2FD) // light blue
+        else -> Color(0xFFFFF3E0)
     }
     val statusTextColor = when {
-        isCheckedIn -> if (isDark) Color(0xFF81D4FA) else Color(0xFF0277BD)
-        isConfirmed -> DarkGreen
-        else -> if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+        isCompleted || isConfirmed -> DarkGreen
+        isBooked -> Color(0xFF1565C0) // blue
+        else -> Color(0xFFE65100)
     }
 
     val locationSubtitle = if (booking.centreName.contains(",")) {
@@ -268,13 +257,13 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable { onViewClick(booking) },
         colors = CardDefaults.cardColors(containerColor = CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            // Header Row: Icon + Title/Location on left, Status Badge on right
+            // Header Row: Icon + Title/Location on left, Status Badge on bottom of title
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
@@ -282,7 +271,7 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
                 Box(
                     modifier = Modifier
                         .size(44.dp)
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(LightGreenPill),
                     contentAlignment = Alignment.Center
                 ) {
@@ -295,9 +284,7 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = cleanTitle,
@@ -316,21 +303,14 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                }
-                
-                // Status Badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(statusBgColor)
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isConfirmed || isCheckedIn) {
-                            val icon = if (isCheckedIn) Icons.Rounded.Verified else Icons.Rounded.CheckCircle
-                            Icon(icon, contentDescription = null, tint = statusTextColor, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(statusBgColor)
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
                         Text(
                             text = displayStatus,
                             style = MaterialTheme.typography.labelSmall,
@@ -339,161 +319,45 @@ fun BookingCard(booking: Booking, isDark: Boolean, onViewClick: (Booking) -> Uni
                         )
                     }
                 }
+                
+                Icon(
+                    Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = MutedGray
+                )
             }
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Grid Details
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    DetailItem(
-                        icon = Icons.Rounded.CalendarToday,
-                        label = "Date",
-                        value = booking.bookingDate,
-                        isDark = isDark
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    DetailItem(
-                        icon = Icons.Rounded.AccessTime,
-                        label = "Time",
-                        value = "${booking.slotStartTime} - ${booking.slotEndTime}",
-                        isDark = isDark
-                    )
-                }
+            val formattedQty = if (booking.quantity % 1.0 == 0.0) {
+                booking.quantity.toInt().toString()
+            } else {
+                booking.quantity.toString()
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    DetailItem(
-                        icon = Icons.Rounded.Eco,
-                        label = "Crop",
-                        value = booking.crop,
-                        isDark = isDark
-                    )
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    val formattedQty = if (booking.quantity % 1.0 == 0.0) {
-                        booking.quantity.toInt().toString()
-                    } else {
-                        booking.quantity.toString()
-                    }
-                    DetailItem(
-                        icon = Icons.Rounded.MonitorWeight,
-                        label = "Quantity",
-                        value = "$formattedQty ${booking.quantityUnit.lowercase()}",
-                        isDark = isDark
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider(color = if (isDark) Color(0xFF333333) else Color.LightGray.copy(alpha = 0.4f))
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Footer Row: Copyable Booking ID & Functional View Details Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable {
-                            clipboardManager.setText(AnnotatedString(booking.trackingId))
-                            Toast.makeText(context, "Booking ID copied to clipboard", Toast.LENGTH_SHORT).show()
-                        }
-                        .padding(vertical = 4.dp, horizontal = 4.dp)
-                ) {
-                    Text(text = "Booking ID", style = MaterialTheme.typography.labelSmall, color = MutedGray)
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = booking.trackingId,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = DarkCharcoal
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            Icons.Rounded.ContentCopy,
-                            contentDescription = "Copy ID",
-                            tint = MutedGray,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(LightGreenPill)
-                        .clickable { onViewClick(booking) }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "View Details",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = DarkGreen,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            Icons.AutoMirrored.Rounded.ArrowForward,
-                            contentDescription = null,
-                            tint = DarkGreen,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DetailItem(icon: ImageVector, label: String, value: String, isDark: Boolean) {
-    val DarkGreen = if (isDark) Color(0xFF81C784) else Color(0xFF2E5E41)
-    val LightGreenPill = if (isDark) Color(0xFF1B3B26) else Color(0xFFE5F0E8)
-    val DarkCharcoal = if (isDark) Color(0xFFE0E0E0) else Color(0xFF1E1E1E)
-    val MutedGray = if (isDark) Color(0xFFA0A0A0) else Color(0xFF6E6E6E)
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(LightGreenPill),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = DarkGreen, modifier = Modifier.size(18.dp))
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MutedGray)
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                text = "${booking.crop} • $formattedQty ${booking.quantityUnit.lowercase()}",
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = DarkCharcoal,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                color = DarkCharcoal
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Rounded.CalendarToday,
+                    contentDescription = null,
+                    tint = MutedGray,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "${formatBookingDate(booking.bookingDate)} • ${booking.slotStartTime}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MutedGray
+                )
+            }
         }
     }
 }
