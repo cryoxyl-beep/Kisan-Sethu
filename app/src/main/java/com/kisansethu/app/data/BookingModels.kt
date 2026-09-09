@@ -63,8 +63,23 @@ data class Booking(
     val createdAt: Long = System.currentTimeMillis(),
     val queueToken: String = "",
     val checkedInAt: java.util.Date? = null,
-    val tokenNumber: Long = 0L
-)
+    val tokenNumber: Long = 0L,
+    val finalCrop: String? = null,
+    val finalQuantity: Double? = null,
+    val finalUnit: String? = null,
+    val finalRate: Double? = null,
+    val deductions: Double? = null,
+    val finalPayableAmount: Double? = null,
+    val completedAt: java.util.Date? = null,
+    val completedBy: String? = null
+) {
+    fun getEffectiveCrop(): String = finalCrop?.takeIf { it.isNotBlank() } ?: crop
+    fun getEffectiveQuantity(): Double = finalQuantity ?: quantity
+    fun getEffectiveUnit(): String = finalUnit?.takeIf { it.isNotBlank() } ?: quantityUnit
+    fun getEffectiveRate(): Double? = finalRate
+    fun getEffectivePayableAmount(): Double? = finalPayableAmount
+    fun getEffectiveCompletedAt(): java.util.Date? = completedAt
+}
 
 @IgnoreExtraProperties
 data class QueueCounter(
@@ -100,7 +115,14 @@ data class QueueEntry(
     val completedAt: java.util.Date? = null,
     val updatedAt: java.util.Date? = null,
     val slotStartTime: String = "",
-    val slotEndTime: String = ""
+    val slotEndTime: String = "",
+    val finalCrop: String? = null,
+    val finalQuantity: Double? = null,
+    val finalUnit: String? = null,
+    val finalRate: Double? = null,
+    val deductions: Double? = null,
+    val finalPayableAmount: Double? = null,
+    val completedBy: String? = null
 ) {
     fun getEffectiveToken(): String = tokenLabel.ifEmpty { queueToken }
     fun getEffectiveDate(): String = queueDate.ifEmpty { procurementDate }.ifEmpty { date }.ifEmpty { bookingDate }
@@ -208,11 +230,28 @@ fun mergeBookingWithQueueEntry(booking: Booking, queueEntry: QueueEntry?): Booki
     val token = queueEntry.getEffectiveToken().ifEmpty { booking.queueToken }
     val tokenNum = if (queueEntry.tokenNumber > 0L) queueEntry.tokenNumber else booking.tokenNumber
     val checkIn = queueEntry.checkInTime ?: queueEntry.checkedInAt ?: booking.checkedInAt
+    val completed = booking.completedAt ?: queueEntry.completedAt
+    val crop = booking.finalCrop?.takeIf { it.isNotBlank() } ?: queueEntry.finalCrop?.takeIf { it.isNotBlank() }
+    val qty = booking.finalQuantity ?: queueEntry.finalQuantity
+    val unit = booking.finalUnit?.takeIf { it.isNotBlank() } ?: queueEntry.finalUnit?.takeIf { it.isNotBlank() }
+    val rate = booking.finalRate ?: queueEntry.finalRate
+    val deductions = booking.deductions ?: queueEntry.deductions
+    val payable = booking.finalPayableAmount ?: queueEntry.finalPayableAmount
+    val by = booking.completedBy?.takeIf { it.isNotBlank() } ?: queueEntry.completedBy?.takeIf { it.isNotBlank() }
+
     return booking.copy(
         status = authStatus,
         queueToken = token,
         tokenNumber = tokenNum,
-        checkedInAt = checkIn
+        checkedInAt = checkIn,
+        completedAt = completed,
+        finalCrop = crop,
+        finalQuantity = qty,
+        finalUnit = unit,
+        finalRate = rate,
+        deductions = deductions,
+        finalPayableAmount = payable,
+        completedBy = by
     )
 }
 
@@ -263,3 +302,57 @@ fun getDisplayStatus(booking: Booking): String {
         else -> norm.replace('_', ' ')
     }
 }
+
+fun formatIndianNumber(num: Long): String {
+    val s = if (num < 0) (-num).toString() else num.toString()
+    if (s.length <= 3) return if (num < 0) "-$s" else s
+    val last3 = s.takeLast(3)
+    val rest = s.dropLast(3)
+    val sb = StringBuilder()
+    var count = 0
+    for (i in rest.length - 1 downTo 0) {
+        sb.append(rest[i])
+        count++
+        if (count == 2 && i > 0) {
+            sb.append(',')
+            count = 0
+        }
+    }
+    val formatted = sb.reverse().toString() + "," + last3
+    return if (num < 0) "-$formatted" else formatted
+}
+
+fun formatCurrencyAmount(amount: Double?): String {
+    if (amount == null) return "-"
+    val isWhole = amount % 1.0 == 0.0
+    val wholePart = amount.toLong()
+    return if (isWhole) {
+        "₹" + formatIndianNumber(wholePart)
+    } else {
+        val frac = String.format(java.util.Locale.ROOT, "%.2f", amount).substringAfter('.')
+        "₹" + formatIndianNumber(wholePart) + "." + frac
+    }
+}
+
+fun formatRateDisplay(rate: Double?, unit: String?): String {
+    if (rate == null) return "-"
+    val isWhole = rate % 1.0 == 0.0
+    val wholePart = rate.toLong()
+    val rateStr = if (isWhole) {
+        formatIndianNumber(wholePart)
+    } else {
+        val frac = String.format(java.util.Locale.ROOT, "%.2f", rate).substringAfter('.')
+        formatIndianNumber(wholePart) + "." + frac
+    }
+    val u = unit?.trim()?.takeIf { it.isNotEmpty() }?.lowercase() ?: "kg"
+    return "₹$rateStr / $u"
+}
+
+fun formatQuantityDisplay(quantity: Double?, unit: String?): String {
+    if (quantity == null) return "-"
+    val isWhole = quantity % 1.0 == 0.0
+    val qtyStr = if (isWhole) quantity.toLong().toString() else quantity.toString()
+    val u = unit?.trim()?.takeIf { it.isNotEmpty() }?.lowercase() ?: "kg"
+    return "$qtyStr $u"
+}
+

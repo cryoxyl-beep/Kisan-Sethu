@@ -7,6 +7,9 @@ import com.kisansethu.app.data.BookingRepository
 import com.kisansethu.app.data.BookingStatus
 import com.kisansethu.app.data.QueueCounter
 import com.kisansethu.app.data.QueueEntry
+import com.kisansethu.app.data.formatCurrencyAmount
+import com.kisansethu.app.data.formatQuantityDisplay
+import com.kisansethu.app.data.formatRateDisplay
 import com.kisansethu.app.data.formatTokenDisplay
 import com.kisansethu.app.data.getDisplayStatus
 import com.kisansethu.app.data.normalizeStatus
@@ -35,6 +38,14 @@ data class LiveTicketUiState(
     val crop: String = "",
     val quantityFormatted: String = "",
     val trackingId: String = "",
+    val finalCrop: String = "",
+    val finalQuantity: Double? = null,
+    val finalUnit: String = "",
+    val finalRate: Double? = null,
+    val deductions: Double? = null,
+    val finalPayableAmount: Double? = null,
+    val rateFormatted: String = "",
+    val finalAmountFormatted: String = "",
     val isMyTurn: Boolean = false,
     val isProcessing: Boolean = false,
     val isCompleted: Boolean = false,
@@ -198,11 +209,15 @@ class LiveTicketViewModel : ViewModel() {
             b.bookingDate
         }
 
-        val formattedQty = if (b.quantity % 1.0 == 0.0) {
-            "${b.quantity.toInt()}.0"
-        } else {
-            b.quantity.toString()
-        }
+        val effCrop = b.getEffectiveCrop()
+        val effQty = b.getEffectiveQuantity()
+        val effUnit = b.getEffectiveUnit()
+        val effRate = b.finalRate
+        val effAmount = b.finalPayableAmount
+
+        val formattedQty = formatQuantityDisplay(effQty, effUnit)
+        val formattedRate = formatRateDisplay(effRate, effUnit)
+        val formattedAmount = formatCurrencyAmount(effAmount)
 
         _uiState.update {
             it.copy(
@@ -217,9 +232,17 @@ class LiveTicketViewModel : ViewModel() {
                 centreName = b.centreName,
                 bookingDate = formattedDate,
                 slotTime = "${b.slotStartTime} - ${b.slotEndTime}".trim().removePrefix("-").removeSuffix("-").trim(),
-                crop = b.crop,
-                quantityFormatted = "$formattedQty ${b.quantityUnit.lowercase()}",
+                crop = effCrop,
+                quantityFormatted = formattedQty,
                 trackingId = b.trackingId,
+                finalCrop = effCrop,
+                finalQuantity = b.finalQuantity,
+                finalUnit = effUnit,
+                finalRate = effRate,
+                deductions = b.deductions,
+                finalPayableAmount = effAmount,
+                rateFormatted = formattedRate,
+                finalAmountFormatted = formattedAmount,
                 isMyTurn = isMyTurn,
                 isProcessing = isProcessing,
                 isCompleted = isCompleted,

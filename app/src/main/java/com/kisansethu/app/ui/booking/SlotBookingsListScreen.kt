@@ -28,6 +28,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.loadingindicator.LoadingIndicator
 import com.kisansethu.app.data.Booking
 import com.kisansethu.app.data.BookingStatus
+import com.kisansethu.app.data.formatCurrencyAmount
+import com.kisansethu.app.data.formatQuantityDisplay
+import com.kisansethu.app.data.formatRateDisplay
 import com.kisansethu.app.data.getDisplayStatus
 import com.kisansethu.app.data.normalizeStatus
 import java.time.LocalDate
@@ -225,27 +228,10 @@ fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
     val SoftMint = Color(0xFFE5F3EA)
     val DarkCharcoal = Color(0xFF1E1E1E)
     val MutedGray = Color(0xFF6E6E6E)
+    val ForestGreen = Color(0xFF1B3B26)
 
     val normStatus = normalizeStatus(booking.status)
     val displayStatus = getDisplayStatus(booking)
-
-    val statusBgColor = when (normStatus) {
-        BookingStatus.COMPLETED.name, BookingStatus.CONFIRMED.name -> SoftMint
-        BookingStatus.PROCESSING.name -> Color(0xFFE1F5FE)
-        BookingStatus.NOW_SERVING.name -> Color(0xFFE8F5E9)
-        BookingStatus.WAITING.name -> Color(0xFFFFF3E0)
-        BookingStatus.CHECKED_IN.name, BookingStatus.BOOKED.name -> Color(0xFFE3F2FD)
-        else -> Color(0xFFF5F5F5)
-    }
-
-    val statusTextColor = when (normStatus) {
-        BookingStatus.COMPLETED.name, BookingStatus.CONFIRMED.name -> Color(0xFF1F6B45)
-        BookingStatus.PROCESSING.name -> Color(0xFF0277BD)
-        BookingStatus.NOW_SERVING.name -> Color(0xFF2E7D32)
-        BookingStatus.WAITING.name -> Color(0xFFE65100)
-        BookingStatus.CHECKED_IN.name, BookingStatus.BOOKED.name -> Color(0xFF1565C0)
-        else -> Color(0xFF757575)
-    }
 
     val locationSubtitle = if (booking.centreName.contains(",")) {
         booking.centreName.substringAfter(",").trim()
@@ -258,63 +244,22 @@ fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
         booking.centreName
     }
 
-    val formattedQty = if (booking.quantity % 1.0 == 0.0) {
-        "${booking.quantity.toInt()}.0"
-    } else {
-        booking.quantity.toString()
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onViewClick(booking) },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, Color(0xFFE8EEEA))
-    ) {
-        Row(
+    if (normStatus == BookingStatus.COMPLETED.name) {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.Top
+                .clickable { onViewClick(booking) },
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, Color(0xFFDCECE2))
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(SoftMint),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
-                Icon(
-                    Icons.Outlined.AccountBalance,
-                    contentDescription = null,
-                    tint = Color(0xFF2E5E41),
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = cleanTitle,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DarkCharcoal,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = locationSubtitle,
-                    fontSize = 13.sp,
-                    color = MutedGray,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
+                // Header badge and tracking ID
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -322,15 +267,27 @@ fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
                 ) {
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = statusBgColor
+                        color = SoftMint
                     ) {
-                        Text(
-                            text = displayStatus,
-                            fontSize = 11.sp,
-                            color = statusTextColor,
-                            fontWeight = FontWeight.Bold,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+                        ) {
+                            Icon(
+                                Icons.Rounded.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF1F6B45),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "PROCUREMENT COMPLETED",
+                                fontSize = 11.sp,
+                                color = Color(0xFF1F6B45),
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
                     }
 
                     Text(
@@ -341,61 +298,301 @@ fun BookingCard(booking: Booking, onViewClick: (Booking) -> Unit) {
                     )
                 }
 
-                if (normStatus == BookingStatus.PROCESSING.name) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Your procurement process has started.",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = statusTextColor
-                    )
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Crop and Final Quantity (Left) & Final Amount (Right)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = booking.getEffectiveCrop(),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = DarkCharcoal
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = formatQuantityDisplay(booking.getEffectiveQuantity(), booking.getEffectiveUnit()),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF2E5E41)
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = SoftMint,
+                        border = BorderStroke(1.dp, Color(0xFFC8E6C9))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text(
+                                text = "Final Amount",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF1F6B45)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = formatCurrencyAmount(booking.finalPayableAmount),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = ForestGreen
+                            )
+                        }
+                    }
                 }
 
-                if (booking.queueToken.isNotEmpty() && (normStatus == BookingStatus.WAITING.name || normStatus == BookingStatus.NOW_SERVING.name || normStatus == BookingStatus.PROCESSING.name)) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Token: ${booking.queueToken}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1B3B26)
-                    )
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = Color(0xFFF0F3F1), thickness = 1.dp)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Rate & Status
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Rate",
+                            fontSize = 11.sp,
+                            color = MutedGray,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = formatRateDisplay(booking.finalRate, booking.getEffectiveUnit()),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = DarkCharcoal
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Status",
+                            fontSize = 11.sp,
+                            color = MutedGray,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Completed",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F6B45)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = "${booking.crop} • $formattedQty ${booking.quantityUnit.lowercase()}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = DarkCharcoal
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Centre and Procurement Date footer
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
-                        Icons.Rounded.CalendarToday,
+                        Icons.Outlined.AccountBalance,
                         contentDescription = null,
                         tint = MutedGray,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "${formatBookingDate(booking.bookingDate)} • ${booking.slotStartTime}",
+                        text = cleanTitle,
+                        fontSize = 12.sp,
+                        color = MutedGray,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        Icons.Rounded.CalendarToday,
+                        contentDescription = null,
+                        tint = MutedGray,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatBookingDate(booking.bookingDate),
                         fontSize = 12.sp,
                         color = MutedGray
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        Icons.Rounded.ChevronRight,
+                        contentDescription = null,
+                        tint = Color(0xFFB0B8B3),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
+        }
+    } else {
+        val statusBgColor = when (normStatus) {
+            BookingStatus.CONFIRMED.name -> SoftMint
+            BookingStatus.PROCESSING.name -> Color(0xFFE1F5FE)
+            BookingStatus.NOW_SERVING.name -> Color(0xFFE8F5E9)
+            BookingStatus.WAITING.name -> Color(0xFFFFF3E0)
+            BookingStatus.CHECKED_IN.name, BookingStatus.BOOKED.name -> Color(0xFFE3F2FD)
+            else -> Color(0xFFF5F5F5)
+        }
 
-            Icon(
-                Icons.Rounded.ChevronRight,
-                contentDescription = null,
-                tint = Color(0xFFB0B8B3),
+        val statusTextColor = when (normStatus) {
+            BookingStatus.CONFIRMED.name -> Color(0xFF1F6B45)
+            BookingStatus.PROCESSING.name -> Color(0xFF0277BD)
+            BookingStatus.NOW_SERVING.name -> Color(0xFF2E7D32)
+            BookingStatus.WAITING.name -> Color(0xFFE65100)
+            BookingStatus.CHECKED_IN.name, BookingStatus.BOOKED.name -> Color(0xFF1565C0)
+            else -> Color(0xFF757575)
+        }
+
+        val formattedQty = if (booking.quantity % 1.0 == 0.0) {
+            "${booking.quantity.toInt()}.0"
+        } else {
+            booking.quantity.toString()
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onViewClick(booking) },
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, Color(0xFFE8EEEA))
+        ) {
+            Row(
                 modifier = Modifier
-                    .padding(top = 8.dp)
-                    .size(22.dp)
-            )
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(SoftMint),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.AccountBalance,
+                        contentDescription = null,
+                        tint = Color(0xFF2E5E41),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = cleanTitle,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DarkCharcoal,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = locationSubtitle,
+                        fontSize = 13.sp,
+                        color = MutedGray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = statusBgColor
+                        ) {
+                            Text(
+                                text = displayStatus,
+                                fontSize = 11.sp,
+                                color = statusTextColor,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "ID: ${booking.trackingId}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MutedGray
+                        )
+                    }
+
+                    if (normStatus == BookingStatus.PROCESSING.name) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Your procurement process has started.",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = statusTextColor
+                        )
+                    }
+
+                    if (booking.queueToken.isNotEmpty() && (normStatus == BookingStatus.WAITING.name || normStatus == BookingStatus.NOW_SERVING.name || normStatus == BookingStatus.PROCESSING.name)) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Token: ${booking.queueToken}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1B3B26)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "${booking.crop} • $formattedQty ${booking.quantityUnit.lowercase()}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DarkCharcoal
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Rounded.CalendarToday,
+                            contentDescription = null,
+                            tint = MutedGray,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${formatBookingDate(booking.bookingDate)} • ${booking.slotStartTime}",
+                            fontSize = 12.sp,
+                            color = MutedGray
+                        )
+                    }
+                }
+
+                Icon(
+                    Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    tint = Color(0xFFB0B8B3),
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .size(22.dp)
+                )
+            }
         }
     }
 }

@@ -4,6 +4,9 @@ import com.kisansethu.app.data.Booking
 import com.kisansethu.app.data.BookingStatus
 import com.kisansethu.app.data.QueueEntry
 import com.kisansethu.app.data.extractNumericToken
+import com.kisansethu.app.data.formatCurrencyAmount
+import com.kisansethu.app.data.formatQuantityDisplay
+import com.kisansethu.app.data.formatRateDisplay
 import com.kisansethu.app.data.formatTokenDisplay
 import com.kisansethu.app.data.getAuthoritativeStatus
 import com.kisansethu.app.data.getDisplayStatus
@@ -16,6 +19,11 @@ import org.junit.Test
 import org.junit.Assert.*
 import java.time.LocalDate
 import java.util.Date
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 
 class ExampleUnitTest {
     @Test
@@ -544,5 +552,277 @@ class ExampleUnitTest {
         val counterWithToken = com.kisansethu.app.data.QueueCounter(activeServingToken = "15")
         val displayWithCounter = formatTokenDisplay(counterWithToken.activeServingToken)
         assertEquals("#015", displayWithCounter)
+    }
+
+    @Test
+    fun testPhaseA61CompletedProcurementDisplayFields() {
+        // Acceptance criteria: The completed item must display:
+        // - Crop
+        // - Final quantity
+        // - Unit
+        // - Rate
+        // - Final payable amount
+        // - Procurement centre
+        // - Procurement date
+        // - Tracking/Booking ID
+        // - Procurement status
+        //
+        // Example:
+        // Rice, 245 kg, Rate: ₹28 / kg, Final Amount: ₹6,860, Status: Completed
+        val completedBooking = Booking(
+            trackingId = "KS26RICE01",
+            farmerId = "FARMER_123",
+            farmerName = "Ramesh Kumar",
+            centreId = "CENTRE_01",
+            centreName = "Medchal Procurement Centre",
+            bookingDate = "2026-09-09",
+            crop = "Paddy",
+            quantity = 250.0,
+            quantityUnit = "kg",
+            status = "COMPLETED",
+            finalCrop = "Rice",
+            finalQuantity = 245.0,
+            finalUnit = "kg",
+            finalRate = 28.0,
+            deductions = 0.0,
+            finalPayableAmount = 6860.0,
+            completedBy = "Admin Officer"
+        )
+
+        // 1. Crop
+        assertEquals("Rice", completedBooking.getEffectiveCrop())
+        // 2. Final quantity
+        assertEquals(245.0, completedBooking.getEffectiveQuantity(), 0.001)
+        // 3. Unit
+        assertEquals("kg", completedBooking.getEffectiveUnit())
+        // Quantity with unit formatted
+        assertEquals("245 kg", formatQuantityDisplay(completedBooking.getEffectiveQuantity(), completedBooking.getEffectiveUnit()))
+        // 4. Rate
+        assertEquals(28.0, completedBooking.getEffectiveRate()!!, 0.001)
+        assertEquals("₹28 / kg", formatRateDisplay(completedBooking.finalRate, completedBooking.getEffectiveUnit()))
+        // 5. Final payable amount
+        assertEquals(6860.0, completedBooking.getEffectivePayableAmount()!!, 0.001)
+        assertEquals("₹6,860", formatCurrencyAmount(completedBooking.finalPayableAmount))
+        // 6. Procurement centre
+        assertEquals("Medchal Procurement Centre", completedBooking.centreName)
+        // 7. Procurement date
+        assertEquals("2026-09-09", completedBooking.bookingDate)
+        // 8. Tracking/Booking ID
+        assertEquals("KS26RICE01", completedBooking.trackingId)
+        // 9. Procurement status
+        assertEquals("COMPLETED", normalizeStatus(completedBooking.status))
+        assertEquals("COMPLETED", getDisplayStatus(completedBooking))
+
+        // Ensure it is categorized as completed
+        assertTrue(isCompletedStatus(completedBooking.status))
+        assertFalse(isUpcomingStatus(completedBooking.status))
+    }
+
+    @Test
+    fun testFormatCurrencyAndRateDisplay() {
+        // Whole amounts with Indian numbering system
+        assertEquals("₹6,860", formatCurrencyAmount(6860.0))
+        assertEquals("₹1,25,000", formatCurrencyAmount(125000.0))
+        assertEquals("₹28", formatCurrencyAmount(28.0))
+        assertEquals("₹0", formatCurrencyAmount(0.0))
+        assertEquals("-", formatCurrencyAmount(null))
+
+        // Decimal amounts
+        assertEquals("₹6,860.50", formatCurrencyAmount(6860.50))
+        assertEquals("₹1,25,000.75", formatCurrencyAmount(125000.75))
+
+        // Rates
+        assertEquals("₹28 / kg", formatRateDisplay(28.0, "kg"))
+        assertEquals("₹28.50 / kg", formatRateDisplay(28.5, "kg"))
+        assertEquals("₹2,400 / quintal", formatRateDisplay(2400.0, "quintal"))
+        assertEquals("₹2,400 / quintal", formatRateDisplay(2400.0, "QUINTAL"))
+        assertEquals("-", formatRateDisplay(null, "kg"))
+
+        // Quantities
+        assertEquals("245 kg", formatQuantityDisplay(245.0, "kg"))
+        assertEquals("245.5 kg", formatQuantityDisplay(245.5, "kg"))
+        assertEquals("50 quintal", formatQuantityDisplay(50.0, "quintal"))
+        assertEquals("-", formatQuantityDisplay(null, "kg"))
+    }
+
+    @Test
+    fun testAdminDashboardSourceOfTruthNoRecalculation() {
+        // Critical requirement:
+        // "Read the finalized values written by the Admin Dashboard.
+        // Do NOT calculate a different amount on the farmer device.
+        // The Admin Dashboard is the source of truth."
+        val bookingWithAdminMath = Booking(
+            trackingId = "KS26SPECIAL",
+            crop = "Wheat",
+            finalCrop = "Wheat Grade A",
+            finalQuantity = 100.0,
+            finalRate = 30.0,
+            deductions = 50.0,
+            finalPayableAmount = 2950.0, // Admin-entered source of truth
+            status = "COMPLETED"
+        )
+
+        // Farmer app must display Admin's exact amount, never recalculating locally
+        assertEquals(2950.0, bookingWithAdminMath.finalPayableAmount!!, 0.001)
+        assertEquals("₹2,950", formatCurrencyAmount(bookingWithAdminMath.finalPayableAmount))
+    }
+
+    @Test
+    fun testRealtimeStatusFlowProcessingToCompleted() {
+        // Acceptance test sequence:
+        // 1. Farmer has a PROCESSING booking
+        var booking = Booking(
+            trackingId = "KS26LIVE01",
+            farmerId = "FARMER_1",
+            crop = "Rice",
+            quantity = 250.0,
+            quantityUnit = "kg",
+            status = "PROCESSING"
+        )
+        // 2. Farmer sees PROCESSING
+        assertEquals("PROCESSING", normalizeStatus(booking.status))
+        assertTrue(isUpcomingStatus(booking.status))
+        assertFalse(isCompletedStatus(booking.status))
+
+        // 3-9. Admin finalizes procurement in Firestore:
+        // Admin enters final crop ("Rice"), final quantity (245.0), unit ("kg"), rate (28.0),
+        // calculates final payable amount (6860.0), marks procurement COMPLETED.
+        val adminQueueUpdate = QueueEntry(
+            id = "KS26LIVE01",
+            bookingId = "KS26LIVE01",
+            trackingId = "KS26LIVE01",
+            farmerId = "FARMER_1",
+            status = "COMPLETED",
+            finalCrop = "Rice",
+            finalQuantity = 245.0,
+            finalUnit = "kg",
+            finalRate = 28.0,
+            finalPayableAmount = 6860.0,
+            completedBy = "Admin Officer"
+        )
+
+        // 10. Farmer app detects COMPLETED automatically via merge
+        booking = mergeBookingWithQueueEntry(booking, adminQueueUpdate)
+
+        // 11. Processing UI disappears: isUpcomingStatus is false
+        assertEquals("COMPLETED", normalizeStatus(booking.status))
+        assertFalse(isUpcomingStatus(booking.status))
+
+        // 12. Procurement appears in Completed section: isCompletedStatus is true
+        assertTrue(isCompletedStatus(booking.status))
+
+        // 13. Final quantity is correct
+        assertEquals(245.0, booking.getEffectiveQuantity(), 0.001)
+        assertEquals("245 kg", formatQuantityDisplay(booking.getEffectiveQuantity(), booking.getEffectiveUnit()))
+
+        // 14. Rate is correct
+        assertEquals(28.0, booking.finalRate!!, 0.001)
+        assertEquals("₹28 / kg", formatRateDisplay(booking.finalRate, booking.getEffectiveUnit()))
+
+        // 15. Final amount exactly matches Admin data
+        assertEquals(6860.0, booking.finalPayableAmount!!, 0.001)
+        assertEquals("₹6,860", formatCurrencyAmount(booking.finalPayableAmount))
+    }
+
+    @Test
+    fun testFallbackWhenFinalCropOrUnitNull() {
+        val bookingWithoutOverrides = Booking(
+            trackingId = "KS26FALLBACK",
+            crop = "Cotton",
+            quantity = 150.0,
+            quantityUnit = "kg",
+            status = "COMPLETED",
+            finalCrop = null,
+            finalQuantity = null,
+            finalUnit = null,
+            finalRate = 60.0,
+            finalPayableAmount = 9000.0
+        )
+
+        assertEquals("Cotton", bookingWithoutOverrides.getEffectiveCrop())
+        assertEquals(150.0, bookingWithoutOverrides.getEffectiveQuantity(), 0.001)
+        assertEquals("kg", bookingWithoutOverrides.getEffectiveUnit())
+        assertEquals("150 kg", formatQuantityDisplay(bookingWithoutOverrides.getEffectiveQuantity(), bookingWithoutOverrides.getEffectiveUnit()))
+    }
+
+    @Test
+    fun testRealtimeSnapshotListenerUpdatingUI() = runTest {
+        // Simulating the Firestore snapshot listener pipeline that feeds the UI
+        val snapshotFlow = MutableSharedFlow<Pair<Booking, QueueEntry?>>(replay = 1)
+
+        val uiStateFlow = MutableStateFlow<Booking?>(null)
+        val isUpcomingFlow = MutableStateFlow(false)
+        val isCompletedFlow = MutableStateFlow(false)
+
+        val job = launch {
+            snapshotFlow.collect { (b, q) ->
+                val merged = mergeBookingWithQueueEntry(b, q)
+                uiStateFlow.value = merged
+                isUpcomingFlow.value = isUpcomingStatus(merged.status)
+                isCompletedFlow.value = isCompletedStatus(merged.status)
+            }
+        }
+        testScheduler.runCurrent()
+
+        // 1. Initial Firestore snapshot: Booking is in PROCESSING state
+        val initialBooking = Booking(
+            trackingId = "KS26SNAP01",
+            farmerId = "F1",
+            centreName = "Mandya APMC Centre",
+            bookingDate = "2026-03-12",
+            crop = "Rice",
+            quantity = 250.0,
+            quantityUnit = "kg",
+            status = "PROCESSING"
+        )
+        snapshotFlow.emit(initialBooking to null)
+        testScheduler.runCurrent()
+
+        assertEquals("PROCESSING", uiStateFlow.value?.status)
+        assertTrue(isUpcomingFlow.value)
+        assertFalse(isCompletedFlow.value)
+
+        // 2. Admin Dashboard finalizes procurement in Firestore:
+        // Admin writes finalCrop="Rice", finalQuantity=245.0, finalUnit="kg", finalRate=28.0,
+        // finalPayableAmount=6860.0, status="COMPLETED"
+        val adminFinalizedQueue = QueueEntry(
+            id = "KS26SNAP01",
+            bookingId = "KS26SNAP01",
+            trackingId = "KS26SNAP01",
+            status = "COMPLETED",
+            finalCrop = "Rice",
+            finalQuantity = 245.0,
+            finalUnit = "kg",
+            finalRate = 28.0,
+            finalPayableAmount = 6860.0,
+            completedBy = "Admin APMC Officer"
+        )
+        // Real-time snapshot listener receives update immediately
+        snapshotFlow.emit(initialBooking to adminFinalizedQueue)
+        testScheduler.runCurrent()
+
+        // 3. UI reflects update immediately without polling or manual refresh
+        val updatedBooking = uiStateFlow.value!!
+        assertEquals("COMPLETED", normalizeStatus(updatedBooking.status))
+
+        // Active procurement / processing UI disappears
+        assertFalse("Active UI must disappear when COMPLETED", isUpcomingFlow.value)
+
+        // Completed section gains the booking
+        assertTrue("Completed UI must appear when COMPLETED", isCompletedFlow.value)
+
+        // Display fields are exact
+        assertEquals("Rice", updatedBooking.getEffectiveCrop())
+        assertEquals(245.0, updatedBooking.getEffectiveQuantity(), 0.001)
+        assertEquals("kg", updatedBooking.getEffectiveUnit())
+        assertEquals("245 kg", formatQuantityDisplay(updatedBooking.getEffectiveQuantity(), updatedBooking.getEffectiveUnit()))
+        assertEquals(28.0, updatedBooking.getEffectiveRate()!!, 0.001)
+        assertEquals("₹28 / kg", formatRateDisplay(updatedBooking.finalRate, updatedBooking.getEffectiveUnit()))
+        assertEquals(6860.0, updatedBooking.getEffectivePayableAmount()!!, 0.001)
+        assertEquals("₹6,860", formatCurrencyAmount(updatedBooking.finalPayableAmount))
+        assertEquals("Admin APMC Officer", updatedBooking.completedBy)
+
+        // Listener cleanup
+        job.cancel()
     }
 }

@@ -359,7 +359,36 @@ fun LiveTicketScreen(
                                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    if (uiState.finalPayableAmount != null) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(14.dp),
+                                            color = Color.White,
+                                            border = BorderStroke(1.dp, Color(0xFFC8E6C9)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(12.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Text(
+                                                    text = "FINAL PAYABLE AMOUNT",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF1F6B45),
+                                                    letterSpacing = 1.sp
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = uiState.finalAmountFormatted,
+                                                    fontSize = 24.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = ForestGreen
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
                                     Text(
                                         text = "Your procurement visit has been completed.",
                                         fontSize = 14.sp,
@@ -459,10 +488,25 @@ fun LiveTicketScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
+                    if (uiState.finalRate != null) {
+                        TicketDetailRow(
+                            label = "Rate",
+                            value = uiState.rateFormatted
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    if (uiState.finalPayableAmount != null) {
+                        TicketDetailRow(
+                            label = "Final Amount",
+                            value = uiState.finalAmountFormatted,
+                            isHighlight = true
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                     TicketDetailRow(
                         label = "Booking ID",
                         value = uiState.trackingId.ifEmpty { booking.trackingId },
-                        isHighlight = true
+                        isHighlight = uiState.finalPayableAmount == null
                     )
 
                     // ==========================================

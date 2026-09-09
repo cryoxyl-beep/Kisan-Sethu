@@ -34,6 +34,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.loadingindicator.LoadingIndicator
 import com.kisansethu.app.data.Booking
 import com.kisansethu.app.data.BookingStatus
+import com.kisansethu.app.data.formatCurrencyAmount
+import com.kisansethu.app.data.formatQuantityDisplay
+import com.kisansethu.app.data.formatRateDisplay
 import com.kisansethu.app.data.getDisplayStatus
 import com.kisansethu.app.data.normalizeStatus
 import com.kisansethu.app.utils.QrCodeGenerator
@@ -253,7 +256,80 @@ fun BookingDetailScreen(
                                 )
                             }
 
-                            if (displayBooking.queueToken.isNotEmpty()) {
+                            if (normStatus == BookingStatus.COMPLETED.name) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = SoftMint,
+                                    border = BorderStroke(1.dp, Color(0xFFC8E6C9))
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "FINAL PAYABLE AMOUNT",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF1F6B45),
+                                                letterSpacing = 1.sp
+                                            )
+                                            Text(
+                                                text = formatCurrencyAmount(displayBooking.finalPayableAmount),
+                                                fontSize = 22.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = ForestGreen
+                                            )
+                                        }
+                                        if (displayBooking.finalRate != null) {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            HorizontalDivider(color = Color(0xFFD4EBD9))
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "Procurement Rate",
+                                                    fontSize = 13.sp,
+                                                    color = Charcoal,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = formatRateDisplay(displayBooking.finalRate, displayBooking.getEffectiveUnit()),
+                                                    fontSize = 13.sp,
+                                                    color = ForestGreen,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                        if (displayBooking.deductions != null && displayBooking.deductions!! > 0.0) {
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "Deductions",
+                                                    fontSize = 13.sp,
+                                                    color = MutedGray
+                                                )
+                                                Text(
+                                                    text = "- " + formatCurrencyAmount(displayBooking.deductions),
+                                                    fontSize = 13.sp,
+                                                    color = Color(0xFFD32F2F),
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (displayBooking.queueToken.isNotEmpty() && normStatus != BookingStatus.COMPLETED.name) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -290,21 +366,38 @@ fun BookingDetailScreen(
                                 value = "${displayBooking.slotStartTime} - ${displayBooking.slotEndTime}"
                             )
                             Spacer(modifier = Modifier.height(10.dp))
-                            val formattedQty = if (displayBooking.quantity % 1.0 == 0.0) {
-                                "${displayBooking.quantity.toInt()}.0"
-                            } else {
-                                displayBooking.quantity.toString()
-                            }
                             DetailRow(
                                 label = "Produce",
-                                value = "${displayBooking.crop} • $formattedQty ${displayBooking.quantityUnit.lowercase()}"
+                                value = "${displayBooking.getEffectiveCrop()} • ${formatQuantityDisplay(displayBooking.getEffectiveQuantity(), displayBooking.getEffectiveUnit())}"
                             )
+                            if (normStatus == BookingStatus.COMPLETED.name || displayBooking.finalRate != null) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                DetailRow(
+                                    label = "Rate",
+                                    value = formatRateDisplay(displayBooking.finalRate, displayBooking.getEffectiveUnit())
+                                )
+                            }
+                            if (normStatus == BookingStatus.COMPLETED.name || displayBooking.finalPayableAmount != null) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                DetailRow(
+                                    label = "Final Amount",
+                                    value = formatCurrencyAmount(displayBooking.finalPayableAmount),
+                                    isHighlight = true
+                                )
+                            }
                             Spacer(modifier = Modifier.height(10.dp))
                             DetailRow(
                                 label = "Booking ID",
                                 value = displayBooking.trackingId,
-                                isHighlight = true
+                                isHighlight = displayBooking.finalPayableAmount == null
                             )
+                            if (displayBooking.completedBy != null && displayBooking.completedBy!!.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                DetailRow(
+                                    label = "Completed By",
+                                    value = displayBooking.completedBy!!
+                                )
+                            }
                         }
                     }
 
@@ -395,7 +488,11 @@ fun BookingDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Scan this QR code at the procurement centre counter.",
+                                    text = if (normStatus == BookingStatus.COMPLETED.name) {
+                                        "Procurement completed for tracking ID ${displayBooking.trackingId}"
+                                    } else {
+                                        "Scan this QR code at the procurement centre counter."
+                                    },
                                     fontSize = 13.sp,
                                     color = MutedGray,
                                     textAlign = TextAlign.Center

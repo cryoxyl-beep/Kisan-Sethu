@@ -49,6 +49,224 @@ class BookingRepository {
         }
     }
 
+    private fun safeGetDouble(doc: com.google.firebase.firestore.DocumentSnapshot, vararg fieldNames: String): Double? {
+        for (name in fieldNames) {
+            val v = doc.get(name) ?: continue
+            when (v) {
+                is Number -> return v.toDouble()
+                is String -> {
+                    val parsed = v.trim().toDoubleOrNull()
+                    if (parsed != null) return parsed
+                }
+            }
+        }
+        return null
+    }
+
+    private fun safeGetLong(doc: com.google.firebase.firestore.DocumentSnapshot, vararg fieldNames: String): Long? {
+        for (name in fieldNames) {
+            val v = doc.get(name) ?: continue
+            when (v) {
+                is Number -> return v.toLong()
+                is String -> {
+                    val parsed = v.trim().toLongOrNull()
+                    if (parsed != null) return parsed
+                }
+            }
+        }
+        return null
+    }
+
+    private fun safeGetString(doc: com.google.firebase.firestore.DocumentSnapshot, vararg fieldNames: String): String? {
+        for (name in fieldNames) {
+            val v = doc.get(name) ?: continue
+            val str = v.toString().trim()
+            if (str.isNotEmpty()) return str
+        }
+        return null
+    }
+
+    private fun safeGetDate(doc: com.google.firebase.firestore.DocumentSnapshot, vararg fieldNames: String): java.util.Date? {
+        for (name in fieldNames) {
+            val v = doc.get(name) ?: continue
+            when (v) {
+                is com.google.firebase.Timestamp -> return v.toDate()
+                is java.util.Date -> return v
+                is Number -> return java.util.Date(v.toLong())
+                is String -> {
+                    val s = v.trim()
+                    val epoch = s.toLongOrNull()
+                    if (epoch != null) return java.util.Date(epoch)
+                    try {
+                        val instant = java.time.Instant.parse(s)
+                        return java.util.Date.from(instant)
+                    } catch (e: Exception) {
+                        try {
+                            val localDate = java.time.LocalDate.parse(s.take(10))
+                            return java.util.Date.from(localDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())
+                        } catch (e2: Exception) {
+                            // ignore
+                        }
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun extractBookingFromDoc(doc: com.google.firebase.firestore.DocumentSnapshot): Booking? {
+        return try {
+            val b = try {
+                doc.toObject(Booking::class.java)
+            } catch (e: Exception) {
+                Log.w("BookingRepository", "toObject(Booking) failed for ${doc.id}, falling back to resilient extraction", e)
+                null
+            }
+
+            val trackingIdVal = safeGetString(doc, "trackingId")?.takeIf { it.isNotBlank() }
+                ?: (b?.trackingId?.takeIf { it.isNotBlank() } ?: doc.id)
+            val farmerIdVal = safeGetString(doc, "farmerId") ?: (b?.farmerId ?: "")
+            val farmerNameVal = safeGetString(doc, "farmerName") ?: (b?.farmerName ?: "")
+            val centreIdVal = safeGetString(doc, "centreId") ?: (b?.centreId ?: "")
+            val centreNameVal = safeGetString(doc, "centreName") ?: (b?.centreName ?: "")
+            val bookingDateVal = safeGetString(doc, "bookingDate", "procurementDate", "date") ?: (b?.bookingDate ?: "")
+            val slotIdVal = safeGetString(doc, "slotId") ?: (b?.slotId ?: "")
+            val slotStartTimeVal = safeGetString(doc, "slotStartTime") ?: (b?.slotStartTime ?: "")
+            val slotEndTimeVal = safeGetString(doc, "slotEndTime") ?: (b?.slotEndTime ?: "")
+            val cropVal = safeGetString(doc, "crop") ?: (b?.crop ?: "")
+            val qtyVal = safeGetDouble(doc, "quantity") ?: (b?.quantity ?: 0.0)
+            val qtyUnitVal = safeGetString(doc, "quantityUnit", "unit") ?: (b?.quantityUnit ?: QuantityUnit.QUINTAL.name)
+            val qtyKgVal = safeGetDouble(doc, "quantityKg") ?: (b?.quantityKg ?: 0.0)
+            val statusVal = safeGetString(doc, "status") ?: (b?.status ?: BookingStatus.BOOKED.name)
+            val qrCodeDataVal = safeGetString(doc, "qrCodeData")?.takeIf { it.isNotBlank() }
+                ?: (b?.qrCodeData?.takeIf { it.isNotBlank() } ?: trackingIdVal)
+            val createdAtVal = safeGetLong(doc, "createdAt") ?: (b?.createdAt ?: System.currentTimeMillis())
+            val queueTokenVal = safeGetString(doc, "queueToken", "tokenLabel", "token") ?: (b?.queueToken ?: "")
+            val checkedInAtVal = safeGetDate(doc, "checkedInAt", "checkInTime") ?: b?.checkedInAt
+            val tokenNumVal = safeGetLong(doc, "tokenNumber") ?: (b?.tokenNumber ?: 0L)
+
+            val finalCropVal = safeGetString(doc, "finalCrop")?.takeIf { it.isNotBlank() } ?: b?.finalCrop
+            val finalUnitVal = safeGetString(doc, "finalUnit", "unit")?.takeIf { it.isNotBlank() } ?: b?.finalUnit
+            val finalQtyVal = safeGetDouble(doc, "finalQuantity") ?: b?.finalQuantity
+            val finalRateVal = safeGetDouble(doc, "finalRate", "rate") ?: b?.finalRate
+            val deductionsVal = safeGetDouble(doc, "deductions") ?: b?.deductions
+            val finalPayableVal = safeGetDouble(doc, "finalPayableAmount", "finalAmount", "payableAmount") ?: b?.finalPayableAmount
+            val completedByVal = safeGetString(doc, "completedBy")?.takeIf { it.isNotBlank() } ?: b?.completedBy
+            val completedAtVal = safeGetDate(doc, "completedAt") ?: b?.completedAt
+
+            Booking(
+                trackingId = trackingIdVal,
+                farmerId = farmerIdVal,
+                farmerName = farmerNameVal,
+                centreId = centreIdVal,
+                centreName = centreNameVal,
+                bookingDate = bookingDateVal,
+                slotId = slotIdVal,
+                slotStartTime = slotStartTimeVal,
+                slotEndTime = slotEndTimeVal,
+                crop = cropVal,
+                quantity = qtyVal,
+                quantityUnit = qtyUnitVal,
+                quantityKg = qtyKgVal,
+                status = statusVal,
+                qrCodeData = qrCodeDataVal,
+                createdAt = createdAtVal,
+                queueToken = queueTokenVal,
+                checkedInAt = checkedInAtVal,
+                tokenNumber = tokenNumVal,
+                finalCrop = finalCropVal,
+                finalQuantity = finalQtyVal,
+                finalUnit = finalUnitVal,
+                finalRate = finalRateVal,
+                deductions = deductionsVal,
+                finalPayableAmount = finalPayableVal,
+                completedAt = completedAtVal,
+                completedBy = completedByVal
+            )
+        } catch (e: Exception) {
+            Log.e("BookingRepository", "Error deserializing booking ${doc.id}", e)
+            null
+        }
+    }
+
+    private fun extractQueueEntryFromDoc(doc: com.google.firebase.firestore.DocumentSnapshot): QueueEntry? {
+        return try {
+            val entry = try {
+                doc.toObject(QueueEntry::class.java)
+            } catch (e: Exception) {
+                Log.w("BookingRepository", "toObject(QueueEntry) failed for ${doc.id}, falling back to resilient extraction", e)
+                null
+            }
+
+            val idVal = safeGetString(doc, "id")?.takeIf { it.isNotBlank() }
+                ?: (entry?.id?.takeIf { it.isNotBlank() } ?: doc.id)
+            val bookingIdVal = safeGetString(doc, "bookingId")?.takeIf { it.isNotBlank() }
+                ?: (entry?.bookingId?.takeIf { it.isNotBlank() } ?: idVal)
+            val trackingIdVal = safeGetString(doc, "trackingId")?.takeIf { it.isNotBlank() }
+                ?: (entry?.trackingId?.takeIf { it.isNotBlank() } ?: bookingIdVal)
+            val farmerIdVal = safeGetString(doc, "farmerId") ?: (entry?.farmerId ?: "")
+            val farmerNameVal = safeGetString(doc, "farmerName") ?: (entry?.farmerName ?: "")
+            val centreIdVal = safeGetString(doc, "centreId") ?: (entry?.centreId ?: "")
+            val tokenLabelVal = safeGetString(doc, "tokenLabel") ?: (entry?.tokenLabel ?: "")
+            val queueTokenVal = safeGetString(doc, "queueToken") ?: (entry?.queueToken ?: tokenLabelVal)
+            val tokenNumVal = safeGetLong(doc, "tokenNumber") ?: (entry?.tokenNumber ?: 0L)
+            val statusVal = safeGetString(doc, "status") ?: (entry?.status ?: BookingStatus.BOOKED.name)
+            val dateVal = safeGetString(doc, "queueDate", "procurementDate", "date", "bookingDate") ?: (entry?.date ?: "")
+            val checkInTimeVal = safeGetDate(doc, "checkInTime", "checkedInAt") ?: entry?.checkInTime
+            val queueJoinedAtVal = safeGetDate(doc, "calledTime", "queueJoinedAt") ?: entry?.queueJoinedAt
+            val startedServingAtVal = safeGetDate(doc, "servingStartTime", "startedServingAt") ?: entry?.startedServingAt
+            val processingStartedAtVal = safeGetDate(doc, "processingStartTime", "processingStartedAt") ?: entry?.processingStartedAt
+            val completedAtVal = safeGetDate(doc, "completedAt") ?: entry?.completedAt
+            val updatedAtVal = safeGetDate(doc, "updatedAt") ?: entry?.updatedAt
+            val slotStartTimeVal = safeGetString(doc, "slotStartTime") ?: (entry?.slotStartTime ?: "")
+            val slotEndTimeVal = safeGetString(doc, "slotEndTime") ?: (entry?.slotEndTime ?: "")
+
+            val finalCropVal = safeGetString(doc, "finalCrop")?.takeIf { it.isNotBlank() } ?: entry?.finalCrop
+            val finalUnitVal = safeGetString(doc, "finalUnit", "unit")?.takeIf { it.isNotBlank() } ?: entry?.finalUnit
+            val finalQtyVal = safeGetDouble(doc, "finalQuantity") ?: entry?.finalQuantity
+            val finalRateVal = safeGetDouble(doc, "finalRate", "rate") ?: entry?.finalRate
+            val deductionsVal = safeGetDouble(doc, "deductions") ?: entry?.deductions
+            val finalPayableVal = safeGetDouble(doc, "finalPayableAmount", "finalAmount", "payableAmount") ?: entry?.finalPayableAmount
+            val completedByVal = safeGetString(doc, "completedBy")?.takeIf { it.isNotBlank() } ?: entry?.completedBy
+
+            QueueEntry(
+                id = idVal,
+                bookingId = bookingIdVal,
+                trackingId = trackingIdVal,
+                farmerId = farmerIdVal,
+                farmerName = farmerNameVal,
+                centreId = centreIdVal,
+                tokenLabel = tokenLabelVal,
+                queueToken = queueTokenVal,
+                tokenNumber = tokenNumVal,
+                status = statusVal,
+                queueDate = dateVal,
+                procurementDate = dateVal,
+                date = dateVal,
+                bookingDate = dateVal,
+                checkInTime = checkInTimeVal,
+                checkedInAt = checkInTimeVal,
+                queueJoinedAt = queueJoinedAtVal,
+                startedServingAt = startedServingAtVal,
+                processingStartedAt = processingStartedAtVal,
+                completedAt = completedAtVal,
+                updatedAt = updatedAtVal,
+                slotStartTime = slotStartTimeVal,
+                slotEndTime = slotEndTimeVal,
+                finalCrop = finalCropVal,
+                finalQuantity = finalQtyVal,
+                finalUnit = finalUnitVal,
+                finalRate = finalRateVal,
+                deductions = deductionsVal,
+                finalPayableAmount = finalPayableVal,
+                completedBy = completedByVal
+            )
+        } catch (e: Exception) {
+            Log.e("BookingRepository", "Error deserializing queue entry ${doc.id}", e)
+            null
+        }
+    }
+
     fun getFarmerBookingsRealtime(farmerId: String): Flow<Result<List<Booking>>> = callbackFlow {
         val cleanFarmerId = farmerId.trim()
         if (cleanFarmerId.isEmpty()) {
@@ -89,16 +307,7 @@ class BookingRepository {
                     }
                     if (snapshot != null) {
                         bookingsList = snapshot.documents.mapNotNull { doc ->
-                            try {
-                                val b = doc.toObject(Booking::class.java) ?: return@mapNotNull null
-                                b.copy(
-                                    trackingId = if (b.trackingId.isEmpty()) doc.id else b.trackingId,
-                                    qrCodeData = if (b.qrCodeData.isEmpty()) doc.id else b.qrCodeData
-                                )
-                            } catch (e: Exception) {
-                                Log.e("BookingRepository", "Error deserializing booking ${doc.id}", e)
-                                null
-                            }
+                            extractBookingFromDoc(doc)
                         }
                         if (queueInitialized || (bookingsList?.isEmpty() == true)) {
                             emitCombined()
@@ -118,30 +327,22 @@ class BookingRepository {
                     if (snapshot != null) {
                         val map = mutableMapOf<String, QueueEntry>()
                         for (doc in snapshot.documents) {
-                            try {
-                                val entry = doc.toObject(QueueEntry::class.java)
-                                if (entry != null) {
-                                    val resolved = entry.copy(
-                                        id = if (entry.id.isEmpty()) doc.id else entry.id,
-                                        trackingId = if (entry.trackingId.isEmpty()) (if (entry.bookingId.isNotEmpty()) entry.bookingId else doc.id) else entry.trackingId,
-                                        bookingId = if (entry.bookingId.isEmpty()) (if (entry.trackingId.isNotEmpty()) entry.trackingId else doc.id) else entry.bookingId
-                                    )
-                                    val keys = listOf(
-                                        doc.id,
-                                        resolved.id,
-                                        resolved.trackingId,
-                                        resolved.bookingId
-                                    ).filter { it.isNotBlank() }
+                            val entry = extractQueueEntryFromDoc(doc)
+                            if (entry != null) {
+                                val resolved = entry
+                                val keys = listOf(
+                                    doc.id,
+                                    resolved.id,
+                                    resolved.trackingId,
+                                    resolved.bookingId
+                                ).filter { it.isNotBlank() }
 
-                                    for (k in keys) {
-                                        val cleanKey = k.trim()
-                                        map[cleanKey] = resolved
-                                        map[cleanKey.uppercase()] = resolved
-                                        map[cleanKey.lowercase()] = resolved
-                                    }
+                                for (k in keys) {
+                                    val cleanKey = k.trim()
+                                    map[cleanKey] = resolved
+                                    map[cleanKey.uppercase()] = resolved
+                                    map[cleanKey.lowercase()] = resolved
                                 }
-                            } catch (e: Exception) {
-                                Log.e("BookingRepository", "Error deserializing queue entry ${doc.id}", e)
                             }
                         }
                         queueEntriesMap = map
@@ -215,17 +416,7 @@ class BookingRepository {
                 }
                 if (snapshot != null) {
                     val activeEntries = snapshot.documents.mapNotNull { doc ->
-                        try {
-                            doc.toObject(QueueEntry::class.java)?.let { entry ->
-                                entry.copy(
-                                    id = if (entry.id.isEmpty()) doc.id else entry.id,
-                                    trackingId = if (entry.trackingId.isEmpty()) (if (entry.bookingId.isNotEmpty()) entry.bookingId else doc.id) else entry.trackingId,
-                                    bookingId = if (entry.bookingId.isEmpty()) (if (entry.trackingId.isNotEmpty()) entry.trackingId else doc.id) else entry.bookingId
-                                )
-                            }
-                        } catch (e: Exception) {
-                            null
-                        }
+                        extractQueueEntryFromDoc(doc)
                     }.filter {
                         normalizeStatus(it.status) in listOf(
                             BookingStatus.CHECKED_IN.name,
@@ -261,17 +452,7 @@ class BookingRepository {
                 }
                 if (snapshot != null) {
                     val entries = snapshot.documents.mapNotNull { doc ->
-                        try {
-                            doc.toObject(QueueEntry::class.java)?.let { entry ->
-                                entry.copy(
-                                    id = if (entry.id.isEmpty()) doc.id else entry.id,
-                                    trackingId = if (entry.trackingId.isEmpty()) (if (entry.bookingId.isNotEmpty()) entry.bookingId else doc.id) else entry.trackingId,
-                                    bookingId = if (entry.bookingId.isEmpty()) (if (entry.trackingId.isNotEmpty()) entry.trackingId else doc.id) else entry.bookingId
-                                )
-                            }
-                        } catch (e: Exception) {
-                            null
-                        }
+                        extractQueueEntryFromDoc(doc)
                     }.filter { entry ->
                         val entryDate = entry.getEffectiveDate().trim()
                         val matchesDate = cleanDate.isEmpty() || entryDate == cleanDate
@@ -360,18 +541,7 @@ class BookingRepository {
                     return@addSnapshotListener
                 }
                 if (snapshot != null && snapshot.exists()) {
-                    val b = try {
-                        snapshot.toObject(Booking::class.java)
-                    } catch (e: Exception) {
-                        Log.e("BookingRepository", "Error parsing booking $cleanTrackingId", e)
-                        null
-                    }
-                    booking = b?.let {
-                        it.copy(
-                            trackingId = if (it.trackingId.isEmpty()) snapshot.id else it.trackingId,
-                            qrCodeData = if (it.qrCodeData.isEmpty()) snapshot.id else it.qrCodeData
-                        )
-                    }
+                    booking = extractBookingFromDoc(snapshot)
                     emitCombined()
                 } else if (snapshot != null && !snapshot.exists()) {
                     trySend(Result.failure(Exception("Booking not found")))
@@ -381,18 +551,7 @@ class BookingRepository {
             // Direct document listener on queueEntries/{cleanTrackingId}
             queueDocListener = queueEntriesCollection.document(cleanTrackingId).addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
-                    directQueueEntry = try {
-                        snapshot.toObject(QueueEntry::class.java)?.let {
-                            it.copy(
-                                id = if (it.id.isEmpty()) snapshot.id else it.id,
-                                trackingId = if (it.trackingId.isEmpty()) snapshot.id else it.trackingId,
-                                bookingId = if (it.bookingId.isEmpty()) snapshot.id else it.bookingId
-                            )
-                        }
-                    } catch (e: Exception) {
-                        Log.e("BookingRepository", "Error parsing queue entry $cleanTrackingId", e)
-                        null
-                    }
+                    directQueueEntry = extractQueueEntryFromDoc(snapshot)
                 } else {
                     directQueueEntry = null
                 }
@@ -403,17 +562,7 @@ class BookingRepository {
             queueQueryListener = queueEntriesCollection.whereEqualTo("trackingId", cleanTrackingId).addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && !snapshot.isEmpty) {
                     val doc = snapshot.documents.firstOrNull()
-                    queryQueueEntry = try {
-                        doc?.toObject(QueueEntry::class.java)?.let {
-                            it.copy(
-                                id = if (it.id.isEmpty()) doc.id else it.id,
-                                trackingId = if (it.trackingId.isEmpty()) doc.id else it.trackingId,
-                                bookingId = if (it.bookingId.isEmpty()) doc.id else it.bookingId
-                            )
-                        }
-                    } catch (e: Exception) {
-                        null
-                    }
+                    queryQueueEntry = doc?.let { extractQueueEntryFromDoc(it) }
                 } else {
                     queryQueueEntry = null
                 }
