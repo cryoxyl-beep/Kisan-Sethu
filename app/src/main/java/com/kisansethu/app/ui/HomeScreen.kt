@@ -186,6 +186,17 @@ fun HomeScreen(
                                 launchSingleTop = true
                                 restoreState = false
                             }
+                        },
+                        onViewLiveTicket = { booking ->
+                            bookingInitialRoute = SlotBookingRoute.LIVE_TICKET
+                            bookingInitialSelected = booking
+                            bottomNavController.navigate(BottomNavItem.Bookings.route) {
+                                popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = false
+                            }
                         }
                     )
                 }
@@ -198,6 +209,15 @@ fun HomeScreen(
                         onResetInitialRoute = {
                             bookingInitialRoute = SlotBookingRoute.LIST
                             bookingInitialSelected = null
+                        },
+                        onNavigateToHome = {
+                            bottomNavController.navigate(BottomNavItem.Home.route) {
+                                popUpTo(bottomNavController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
                     )
                 }

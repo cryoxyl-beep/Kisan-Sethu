@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.rounded.*
@@ -48,6 +49,7 @@ private val MutedGray = Color(0xFF6E6E6E)
 fun BookingDetailScreen(
     booking: Booking,
     onBack: () -> Unit,
+    onViewLiveDetails: ((Booking) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: BookingDetailViewModel = viewModel()
 ) {
@@ -302,6 +304,60 @@ fun BookingDetailScreen(
                                 label = "Booking ID",
                                 value = displayBooking.trackingId,
                                 isHighlight = true
+                            )
+                        }
+                    }
+
+                    val isLiveQueueActive = normStatus in listOf(
+                        BookingStatus.CHECKED_IN.name,
+                        BookingStatus.WAITING.name,
+                        BookingStatus.NOW_SERVING.name,
+                        BookingStatus.PROCESSING.name
+                    )
+
+                    if (isLiveQueueActive) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { onViewLiveDetails?.invoke(displayBooking) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.ConfirmationNumber,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "View Live Details",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else if (normStatus == BookingStatus.COMPLETED.name) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            onClick = { onViewLiveDetails?.invoke(displayBooking) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            border = BorderStroke(1.5.dp, ForestGreen),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ForestGreen),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.ReceiptLong,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "View Procurement Ticket",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

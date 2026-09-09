@@ -14,6 +14,7 @@ class BookingRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val bookingsCollection = firestore.collection("bookings")
     private val queueEntriesCollection = firestore.collection("queueEntries")
+    private val queueCountersCollection = firestore.collection("queueCounters")
 
     private fun generateTrackingId(): String {
         val year = java.time.Year.now().value.toString().takeLast(2)
@@ -245,6 +246,12 @@ class BookingRepository {
 
     fun getLiveQueueRealtime(centreId: String, procurementDate: String): Flow<Result<List<QueueEntry>>> = callbackFlow {
         val cleanCentreId = centreId.trim()
+        val cleanDate = procurementDate.trim()
+        if (cleanCentreId.isEmpty()) {
+            trySend(Result.success(emptyList()))
+            close()
+            return@callbackFlow
+        }
         val listener = queueEntriesCollection
             .whereEqualTo("centreId", cleanCentreId)
             .addSnapshotListener { snapshot, error ->
@@ -266,18 +273,59 @@ class BookingRepository {
                             null
                         }
                     }.filter { entry ->
-                        val date = entry.getEffectiveDate()
-                        (date.isEmpty() || procurementDate.isEmpty() || date == procurementDate) &&
+                        val entryDate = entry.getEffectiveDate().trim()
+                        val matchesDate = cleanDate.isEmpty() || entryDate == cleanDate
+                        matchesDate &&
                         normalizeStatus(entry.status) in listOf(
                             BookingStatus.WAITING.name,
                             BookingStatus.NOW_SERVING.name,
                             BookingStatus.PROCESSING.name,
                             BookingStatus.CHECKED_IN.name
                         )
-                    }.sortedBy { it.getEffectiveCheckInTime() }
-                    trySend(Result.success(entries))
+                    }
+                    val sortedEntries = sortQueueEntries(entries)
+                    trySend(Result.success(sortedEntries))
                 }
             }
+        awaitClose {
+            listener.remove()
+        }
+    }
+
+    fun getQueueCounterRealtime(centreId: String, date: String): Flow<Result<QueueCounter?>> = callbackFlow {
+        val cleanCentreId = centreId.trim()
+        val cleanDate = date.trim()
+        if (cleanCentreId.isEmpty() || cleanDate.isEmpty()) {
+            trySend(Result.success(null))
+            close()
+            return@callbackFlow
+        }
+        val docId = "${cleanCentreId}_$cleanDate"
+        val listener = queueCountersCollection.document(docId).addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                trySend(Result.failure(error))
+                return@addSnapshotListener
+            }
+            if (snapshot != null && snapshot.exists()) {
+                val counter = try {
+                    val base = snapshot.toObject(QueueCounter::class.java)
+                    base?.copy(
+                        centreId = snapshot.getString("centreId") ?: cleanCentreId,
+                        date = snapshot.getString("date") ?: cleanDate,
+                        lastTokenNumber = snapshot.getLong("lastTokenNumber") ?: base.lastTokenNumber,
+                        activeServingId = snapshot.getString("activeServingId") ?: base.activeServingId,
+                        activeServingToken = snapshot.getString("activeServingToken")
+                            ?: snapshot.getString("servingToken")
+                            ?: base.activeServingToken
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+                trySend(Result.success(counter))
+            } else {
+                trySend(Result.success(null))
+            }
+        }
         awaitClose {
             listener.remove()
         }

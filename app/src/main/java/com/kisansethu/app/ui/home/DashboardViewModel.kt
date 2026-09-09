@@ -102,33 +102,62 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
+    private var currentObservedCentre: String? = null
+    private var currentObservedDate: String? = null
+
     private fun observeLiveQueue(activeBooking: Booking) {
+        val effectiveDate = activeBooking.bookingDate.trim()
+        val centreId = activeBooking.centreId.trim()
+        if (centreId == currentObservedCentre && effectiveDate == currentObservedDate && liveQueueJob?.isActive == true) {
+            return
+        }
         liveQueueJob?.cancel()
-        val effectiveDate = activeBooking.bookingDate
+        currentObservedCentre = centreId
+        currentObservedDate = effectiveDate
+
         liveQueueJob = viewModelScope.launch {
-            repository.getLiveQueueRealtime(activeBooking.centreId, effectiveDate).collect { result ->
+            repository.getLiveQueueRealtime(centreId, effectiveDate).collect { result ->
                 if (result.isSuccess) {
                     val queue = result.getOrNull() ?: emptyList()
-                    
-                    val myIndex = queue.indexOfFirst { entry ->
-                        entry.farmerId == activeBooking.farmerId ||
-                        entry.trackingId == activeBooking.trackingId ||
-                        entry.bookingId == activeBooking.trackingId ||
-                        entry.id == activeBooking.trackingId
-                    }
-                    
-                    val myPosition = if (myIndex >= 0) myIndex + 1 else 0
-                    val farmersAhead = if (myIndex > 0) myIndex else 0
-                    
-                    val servingEntry = queue.firstOrNull { 
-                        val s = normalizeStatus(it.status)
-                        s == BookingStatus.NOW_SERVING.name || s == BookingStatus.PROCESSING.name 
-                    }
-                    val currentServing = servingEntry?.getEffectiveToken()?.ifEmpty { "None" } ?: "None"
+                    val normStatus = normalizeStatus(activeBooking.status)
 
-                    val myToken = activeBooking.queueToken.ifEmpty { 
-                        if (myIndex >= 0) queue[myIndex].getEffectiveToken() else ""
-                    }.ifEmpty { activeBooking.trackingId }
+                    val myIndex = queue.indexOfFirst { entry ->
+                        entry.trackingId.equals(activeBooking.trackingId, ignoreCase = true) ||
+                        entry.bookingId.equals(activeBooking.trackingId, ignoreCase = true) ||
+                        entry.id.equals(activeBooking.trackingId, ignoreCase = true)
+                    }.let { idx ->
+                        if (idx < 0) {
+                            queue.indexOfFirst { entry ->
+                                entry.farmerId.isNotEmpty() && entry.farmerId.equals(activeBooking.farmerId, ignoreCase = true)
+                            }
+                        } else idx
+                    }
+
+                    val (myPosition, farmersAhead) = when (normStatus) {
+                        BookingStatus.NOW_SERVING.name, BookingStatus.PROCESSING.name -> 1 to 0
+                        else -> {
+                            if (myIndex >= 0) {
+                                (myIndex + 1) to (if (myIndex > 0) myIndex else 0)
+                            } else {
+                                0 to 0
+                            }
+                        }
+                    }
+
+                    val servingEntry = queue.firstOrNull {
+                        val s = normalizeStatus(it.status)
+                        s == BookingStatus.NOW_SERVING.name
+                    }
+                    val currentServing = if (servingEntry != null) {
+                        com.kisansethu.app.data.formatTokenDisplay(servingEntry.getEffectiveToken(), servingEntry.tokenNumber)
+                    } else {
+                        "No farmer currently being served"
+                    }
+
+                    val myEntry = if (myIndex >= 0) queue[myIndex] else null
+                    val rawMyToken = myEntry?.getEffectiveToken()?.ifEmpty { activeBooking.queueToken } ?: activeBooking.queueToken
+                    val tokenNum = if ((myEntry?.tokenNumber ?: 0L) > 0L) myEntry!!.tokenNumber else activeBooking.tokenNumber
+                    val formattedMyToken = com.kisansethu.app.data.formatTokenDisplay(rawMyToken, tokenNum)
 
                     _uiState.value = _uiState.value.copy(
                         hasActiveQueue = true,
@@ -136,7 +165,7 @@ class DashboardViewModel : ViewModel() {
                             centreName = activeBooking.centreName,
                             bookingDate = activeBooking.bookingDate,
                             timeSlot = "${activeBooking.slotStartTime} - ${activeBooking.slotEndTime}",
-                            myToken = myToken,
+                            myToken = formattedMyToken,
                             currentServingToken = currentServing,
                             farmersAhead = farmersAhead,
                             myPosition = myPosition,
@@ -153,6 +182,8 @@ class DashboardViewModel : ViewModel() {
         myBookingsJob = null
         liveQueueJob?.cancel()
         liveQueueJob = null
+        currentObservedCentre = null
+        currentObservedDate = null
         _uiState.value = DashboardUiState()
     }
 
@@ -160,5 +191,7 @@ class DashboardViewModel : ViewModel() {
         super.onCleared()
         myBookingsJob?.cancel()
         liveQueueJob?.cancel()
+        currentObservedCentre = null
+        currentObservedDate = null
     }
 }

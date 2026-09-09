@@ -51,6 +51,7 @@ fun DashboardScreen(
     onBookSlot: () -> Unit,
     onViewAll: () -> Unit = onBookSlot,
     onViewBooking: ((Booking) -> Unit)? = null,
+    onViewLiveTicket: ((Booking) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = viewModel()
 ) {
@@ -244,6 +245,179 @@ fun DashboardScreen(
                 }
             }
 
+            val normPrimaryStatus = normalizeStatus(primaryBooking.status)
+            val isLiveQueueActive = normPrimaryStatus in listOf(
+                BookingStatus.CHECKED_IN.name,
+                BookingStatus.WAITING.name,
+                BookingStatus.NOW_SERVING.name,
+                BookingStatus.PROCESSING.name
+            )
+
+            if (isLiveQueueActive) {
+                val tokenDisplay = uiState.liveQueueData?.myToken?.ifEmpty {
+                    com.kisansethu.app.data.formatTokenDisplay(primaryBooking.queueToken, primaryBooking.tokenNumber)
+                } ?: com.kisansethu.app.data.formatTokenDisplay(primaryBooking.queueToken, primaryBooking.tokenNumber)
+                val statusText = when (normPrimaryStatus) {
+                    BookingStatus.WAITING.name -> "Waiting"
+                    BookingStatus.NOW_SERVING.name -> "Now Serving"
+                    BookingStatus.PROCESSING.name -> "Processing"
+                    BookingStatus.CHECKED_IN.name -> "Checked In"
+                    else -> getDisplayStatus(primaryBooking)
+                }
+                val position = uiState.liveQueueData?.myPosition ?: 0
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFE8EEEA)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF2E7D32))
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "LIVE PROCUREMENT",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2E5E41),
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = when (normPrimaryStatus) {
+                                    BookingStatus.NOW_SERVING.name -> Color(0xFFE8F5E9)
+                                    BookingStatus.PROCESSING.name -> Color(0xFFE1F5FE)
+                                    BookingStatus.WAITING.name -> Color(0xFFFFF3E0)
+                                    else -> Color(0xFFE3F2FD)
+                                }
+                            ) {
+                                Text(
+                                    text = statusText,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = when (normPrimaryStatus) {
+                                        BookingStatus.NOW_SERVING.name -> Color(0xFF2E7D32)
+                                        BookingStatus.PROCESSING.name -> Color(0xFF0277BD)
+                                        BookingStatus.WAITING.name -> Color(0xFFE65100)
+                                        else -> Color(0xFF1565C0)
+                                    },
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Token $tokenDisplay",
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = ForestGreen
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Status: $statusText",
+                                    fontSize = 14.sp,
+                                    color = MutedGray,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            if ((normPrimaryStatus == BookingStatus.WAITING.name || normPrimaryStatus == BookingStatus.CHECKED_IN.name) && position > 0) {
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "Position: $position",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Charcoal
+                                    )
+                                    val ahead = uiState.liveQueueData?.farmersAhead ?: 0
+                                    if (ahead > 0) {
+                                        Text(
+                                            text = "$ahead ahead",
+                                            fontSize = 12.sp,
+                                            color = MutedGray
+                                        )
+                                    }
+                                }
+                            } else if (normPrimaryStatus == BookingStatus.NOW_SERVING.name) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFE8F5E9)
+                                ) {
+                                    Text(
+                                        text = "Your Turn",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2E7D32),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    )
+                                }
+                            } else if (normPrimaryStatus == BookingStatus.PROCESSING.name) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFE1F5FE)
+                                ) {
+                                    Text(
+                                        text = "Processing",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0277BD),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                onViewLiveTicket?.invoke(primaryBooking) ?: onViewBooking?.invoke(primaryBooking)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.ConfirmationNumber,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "View Live Details",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
             SectionHeader(
                 title = if (count > 1) "Active Procurements" else "Today's Procurement",
                 onViewAll = onViewAll
@@ -254,11 +428,21 @@ fun DashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 activeList.forEach { bookingItem ->
+                    val isItemQueueActive = normalizeStatus(bookingItem.status) in listOf(
+                        BookingStatus.CHECKED_IN.name,
+                        BookingStatus.WAITING.name,
+                        BookingStatus.NOW_SERVING.name,
+                        BookingStatus.PROCESSING.name
+                    )
                     ActiveBookingCard(
                         booking = bookingItem,
                         queueData = if (bookingItem.trackingId == primaryBooking.trackingId) uiState.liveQueueData else null,
                         onClick = {
-                            onViewBooking?.invoke(bookingItem) ?: onViewAll()
+                            if (isItemQueueActive && onViewLiveTicket != null) {
+                                onViewLiveTicket.invoke(bookingItem)
+                            } else {
+                                onViewBooking?.invoke(bookingItem) ?: onViewAll()
+                            }
                         }
                     )
                 }

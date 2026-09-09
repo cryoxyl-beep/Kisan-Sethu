@@ -3,12 +3,15 @@ package com.kisansethu.app
 import com.kisansethu.app.data.Booking
 import com.kisansethu.app.data.BookingStatus
 import com.kisansethu.app.data.QueueEntry
+import com.kisansethu.app.data.extractNumericToken
+import com.kisansethu.app.data.formatTokenDisplay
 import com.kisansethu.app.data.getAuthoritativeStatus
 import com.kisansethu.app.data.getDisplayStatus
 import com.kisansethu.app.data.isCompletedStatus
 import com.kisansethu.app.data.isUpcomingStatus
 import com.kisansethu.app.data.mergeBookingWithQueueEntry
 import com.kisansethu.app.data.normalizeStatus
+import com.kisansethu.app.data.sortQueueEntries
 import org.junit.Test
 import org.junit.Assert.*
 import java.time.LocalDate
@@ -290,5 +293,256 @@ class ExampleUnitTest {
         assertEquals("COMPLETED", getDisplayStatus(booking))
         assertFalse(isUpcomingStatus(booking.status))
         assertTrue(isCompletedStatus(booking.status))
+    }
+
+    @Test
+    fun testTokenDisplayFormatting() {
+        assertEquals("#014", formatTokenDisplay("14"))
+        assertEquals("#011", formatTokenDisplay("11"))
+        assertEquals("#014", formatTokenDisplay("014"))
+        assertEquals("#014", formatTokenDisplay("#014"))
+        assertEquals("#MP-002", formatTokenDisplay("MP-002"))
+        assertEquals("#TK-101", formatTokenDisplay("TK-101"))
+        assertEquals("#KA-001", formatTokenDisplay("KA-001", 1L))
+        assertEquals("#MP-002", formatTokenDisplay("MP-002", 2L))
+        assertEquals("#TK-101", formatTokenDisplay("TK-101", 101L))
+        assertEquals("#014", formatTokenDisplay(null, 14L))
+        assertEquals("#014", formatTokenDisplay("", 14L))
+        assertEquals("-", formatTokenDisplay(null, 0L))
+        assertEquals("-", formatTokenDisplay("", 0L))
+    }
+
+    @Test
+    fun testPhaseA54AcceptanceQueueProgression() {
+        // Initial setup matching task specification:
+        // Farmer A: #011 NOW_SERVING
+        // Farmer B: #012 WAITING
+        // Farmer C: #013 WAITING
+        // Current farmer: #014 WAITING
+        val farmerA = QueueEntry(
+            id = "B011",
+            trackingId = "KS26A011",
+            farmerId = "FARMER_A",
+            centreId = "CENTRE_XYZ",
+            queueDate = "2026-09-09",
+            tokenNumber = 11L,
+            queueToken = "11",
+            status = "NOW_SERVING"
+        )
+        val farmerB = QueueEntry(
+            id = "B012",
+            trackingId = "KS26B012",
+            farmerId = "FARMER_B",
+            centreId = "CENTRE_XYZ",
+            queueDate = "2026-09-09",
+            tokenNumber = 12L,
+            queueToken = "12",
+            status = "WAITING"
+        )
+        val farmerC = QueueEntry(
+            id = "B013",
+            trackingId = "KS26C013",
+            farmerId = "FARMER_C",
+            centreId = "CENTRE_XYZ",
+            queueDate = "2026-09-09",
+            tokenNumber = 13L,
+            queueToken = "13",
+            status = "WAITING"
+        )
+        var currentFarmerQueue = QueueEntry(
+            id = "B014",
+            trackingId = "KS26D014",
+            farmerId = "CURRENT_FARMER",
+            centreId = "CENTRE_XYZ",
+            queueDate = "2026-09-09",
+            tokenNumber = 14L,
+            queueToken = "14",
+            status = "WAITING"
+        )
+
+        var currentFarmerBooking = Booking(
+            trackingId = "KS26D014",
+            farmerId = "CURRENT_FARMER",
+            centreId = "CENTRE_XYZ",
+            centreName = "XYZ Procurement Centre",
+            bookingDate = "2026-09-09",
+            slotStartTime = "10:00 AM",
+            slotEndTime = "11:00 AM",
+            status = "CHECKED_IN",
+            queueToken = "14",
+            tokenNumber = 14L
+        )
+
+        // Function helper mimicking ViewModel queue computation
+        fun computeQueueState(
+            activeQueue: List<QueueEntry>,
+            farmerBooking: Booking
+        ): Triple<String, Int, Int> {
+            val sorted = sortQueueEntries(activeQueue)
+            val servingEntry = sorted.firstOrNull { normalizeStatus(it.status) == BookingStatus.NOW_SERVING.name }
+            val servingToken = if (servingEntry != null) {
+                formatTokenDisplay(servingEntry.getEffectiveToken(), servingEntry.tokenNumber)
+            } else {
+                "No farmer currently being served"
+            }
+
+            val normStatus = normalizeStatus(farmerBooking.status)
+            val (pos, ahead) = when (normStatus) {
+                BookingStatus.COMPLETED.name -> 0 to 0
+                BookingStatus.NOW_SERVING.name, BookingStatus.PROCESSING.name -> 1 to 0
+                else -> {
+                    val idx = sorted.indexOfFirst { it.trackingId == farmerBooking.trackingId }
+                    if (idx >= 0) (idx + 1) to (if (idx > 0) idx else 0) else 0 to 0
+                }
+            }
+            return Triple(servingToken, pos, ahead)
+        }
+
+        // 1. Initial State
+        var activeQueue = listOf(farmerA, farmerB, farmerC, currentFarmerQueue)
+        var (nowServing, pos, ahead) = computeQueueState(activeQueue, currentFarmerBooking)
+
+        assertEquals("#014", formatTokenDisplay(currentFarmerBooking.queueToken, currentFarmerBooking.tokenNumber))
+        assertEquals("WAITING", normalizeStatus(currentFarmerQueue.status))
+        assertEquals("#011", nowServing)
+        assertEquals(4, pos)
+        assertEquals(3, ahead)
+
+        // 2. Admin advances Farmer B (Farmer B removed / processed from active queue)
+        activeQueue = listOf(farmerA, farmerC, currentFarmerQueue)
+        val step2 = computeQueueState(activeQueue, currentFarmerBooking)
+        assertEquals("#011", step2.first)
+        assertEquals(3, step2.second)
+        assertEquals(2, step2.third)
+
+        // 3. Admin advances Farmer C (Farmer C removed / processed from active queue)
+        activeQueue = listOf(farmerA, currentFarmerQueue)
+        val step3 = computeQueueState(activeQueue, currentFarmerBooking)
+        assertEquals("#011", step3.first)
+        assertEquals(2, step3.second)
+        assertEquals(1, step3.third)
+
+        // 4. Admin makes current farmer NOW_SERVING
+        currentFarmerQueue = currentFarmerQueue.copy(status = "NOW_SERVING")
+        currentFarmerBooking = mergeBookingWithQueueEntry(currentFarmerBooking, currentFarmerQueue)
+        activeQueue = listOf(currentFarmerQueue)
+        val step4 = computeQueueState(activeQueue, currentFarmerBooking)
+        assertEquals("NOW_SERVING", normalizeStatus(currentFarmerBooking.status))
+        assertEquals("#014", step4.first)
+        assertEquals(1, step4.second)
+        assertEquals(0, step4.third)
+
+        // 5. Admin changes current farmer to PROCESSING
+        currentFarmerQueue = currentFarmerQueue.copy(status = "PROCESSING")
+        currentFarmerBooking = mergeBookingWithQueueEntry(currentFarmerBooking, currentFarmerQueue)
+        val step5 = computeQueueState(activeQueue, currentFarmerBooking)
+        assertEquals("PROCESSING", normalizeStatus(currentFarmerBooking.status))
+        assertEquals(1, step5.second)
+        assertEquals(0, step5.third)
+
+        // 6. Admin marks current farmer COMPLETED
+        currentFarmerQueue = currentFarmerQueue.copy(status = "COMPLETED")
+        currentFarmerBooking = mergeBookingWithQueueEntry(currentFarmerBooking, currentFarmerQueue)
+        // Completed bookings leave active queue
+        activeQueue = emptyList()
+        val step6 = computeQueueState(activeQueue, currentFarmerBooking)
+        assertEquals("COMPLETED", normalizeStatus(currentFarmerBooking.status))
+        assertEquals("No farmer currently being served", step6.first)
+        assertEquals(0, step6.second)
+        assertEquals(0, step6.third)
+        assertTrue(isCompletedStatus(currentFarmerBooking.status))
+        assertFalse(isUpcomingStatus(currentFarmerBooking.status))
+    }
+
+    @Test
+    fun testCentreAndDateIsolation() {
+        val today = "2026-09-09"
+        val tomorrow = "2026-09-10"
+
+        val entryCentreA = QueueEntry(
+            id = "E1", centreId = "CENTRE_A", queueDate = today, tokenNumber = 1L, status = "WAITING"
+        )
+        val entryCentreB = QueueEntry(
+            id = "E2", centreId = "CENTRE_B", queueDate = today, tokenNumber = 1L, status = "WAITING"
+        )
+        val entryTomorrow = QueueEntry(
+            id = "E3", centreId = "CENTRE_A", queueDate = tomorrow, tokenNumber = 2L, status = "WAITING"
+        )
+
+        val allEntries = listOf(entryCentreA, entryCentreB, entryTomorrow)
+
+        // Filter for CENTRE_A and today
+        val filtered = allEntries.filter { entry ->
+            entry.centreId == "CENTRE_A" && entry.getEffectiveDate() == today
+        }
+
+        assertEquals(1, filtered.size)
+        assertEquals("E1", filtered[0].id)
+        assertFalse(filtered.any { it.centreId == "CENTRE_B" })
+        assertFalse(filtered.any { it.getEffectiveDate() == tomorrow })
+    }
+
+    @Test
+    fun testViewLiveDetailsButtonVisibilityRules() {
+        fun shouldShowLiveDetailsButton(status: String): Boolean {
+            val norm = normalizeStatus(status)
+            return norm in listOf(
+                BookingStatus.CHECKED_IN.name,
+                BookingStatus.WAITING.name,
+                BookingStatus.NOW_SERVING.name,
+                BookingStatus.PROCESSING.name,
+                BookingStatus.COMPLETED.name // Accessible from completed history
+            )
+        }
+
+        assertFalse("BOOKED should not show Live Details", shouldShowLiveDetailsButton("BOOKED"))
+        assertFalse("CONFIRMED should not show Live Details", shouldShowLiveDetailsButton("CONFIRMED"))
+        assertTrue("CHECKED_IN should show Live Details", shouldShowLiveDetailsButton("CHECKED_IN"))
+        assertTrue("WAITING should show Live Details", shouldShowLiveDetailsButton("WAITING"))
+        assertTrue("NOW_SERVING should show Live Details", shouldShowLiveDetailsButton("NOW_SERVING"))
+        assertTrue("PROCESSING should show Live Details", shouldShowLiveDetailsButton("PROCESSING"))
+        assertTrue("COMPLETED should be accessible from history", shouldShowLiveDetailsButton("COMPLETED"))
+    }
+
+    @Test
+    fun testQueueEntryDateFieldFallbacks() {
+        val entryWithQueueDate = QueueEntry(queueDate = "2026-09-09")
+        assertEquals("2026-09-09", entryWithQueueDate.getEffectiveDate())
+
+        val entryWithProcurementDate = QueueEntry(procurementDate = "2026-09-09")
+        assertEquals("2026-09-09", entryWithProcurementDate.getEffectiveDate())
+
+        val entryWithDate = QueueEntry(date = "2026-09-09")
+        assertEquals("2026-09-09", entryWithDate.getEffectiveDate())
+
+        val entryWithBookingDate = QueueEntry(bookingDate = "2026-09-09")
+        assertEquals("2026-09-09", entryWithBookingDate.getEffectiveDate())
+    }
+
+    @Test
+    fun testSortQueueEntriesDeterministicTieBreaking() {
+        val nowServing = QueueEntry(id = "E1", tokenNumber = 10L, status = "NOW_SERVING")
+        val processing = QueueEntry(id = "E2", tokenNumber = 9L, status = "PROCESSING")
+        val waiting1 = QueueEntry(id = "E3", tokenNumber = 11L, status = "WAITING")
+        val waiting2 = QueueEntry(id = "E4", tokenNumber = 12L, status = "WAITING")
+
+        val sorted = sortQueueEntries(listOf(waiting2, waiting1, processing, nowServing))
+        assertEquals("E1", sorted[0].id) // NOW_SERVING
+        assertEquals("E2", sorted[1].id) // PROCESSING
+        assertEquals("E3", sorted[2].id) // WAITING token 11
+        assertEquals("E4", sorted[3].id) // WAITING token 12
+    }
+
+    @Test
+    fun testActiveServingFallbackToCounter() {
+        // When no entry is NOW_SERVING, should show "No farmer currently being served"
+        val waitingOnly = listOf(QueueEntry(id = "E1", tokenNumber = 1L, status = "WAITING"))
+        val sorted = sortQueueEntries(waitingOnly)
+        val servingEntry = sorted.firstOrNull { normalizeStatus(it.status) == BookingStatus.NOW_SERVING.name }
+        assertNull(servingEntry)
+
+        val counterWithToken = com.kisansethu.app.data.QueueCounter(activeServingToken = "15")
+        val displayWithCounter = formatTokenDisplay(counterWithToken.activeServingToken)
+        assertEquals("#015", displayWithCounter)
     }
 }

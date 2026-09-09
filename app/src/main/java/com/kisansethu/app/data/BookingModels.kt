@@ -62,7 +62,17 @@ data class Booking(
     val qrCodeData: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val queueToken: String = "",
-    val checkedInAt: java.util.Date? = null
+    val checkedInAt: java.util.Date? = null,
+    val tokenNumber: Long = 0L
+)
+
+@IgnoreExtraProperties
+data class QueueCounter(
+    val centreId: String = "",
+    val date: String = "",
+    val lastTokenNumber: Long = 0L,
+    val activeServingId: String = "",
+    val activeServingToken: String = ""
 )
 
 @IgnoreExtraProperties
@@ -76,6 +86,8 @@ data class QueueEntry(
     val centreName: String = "",
     val queueDate: String = "",
     val procurementDate: String = "",
+    val date: String = "",
+    val bookingDate: String = "",
     val tokenLabel: String = "",
     val queueToken: String = "",
     val tokenNumber: Long = 0L,
@@ -91,8 +103,56 @@ data class QueueEntry(
     val slotEndTime: String = ""
 ) {
     fun getEffectiveToken(): String = tokenLabel.ifEmpty { queueToken }
-    fun getEffectiveDate(): String = queueDate.ifEmpty { procurementDate }
+    fun getEffectiveDate(): String = queueDate.ifEmpty { procurementDate }.ifEmpty { date }.ifEmpty { bookingDate }
     fun getEffectiveCheckInTime(): Long = (checkInTime ?: checkedInAt ?: queueJoinedAt)?.time ?: 0L
+}
+
+fun extractNumericToken(token: String?): Long? {
+    if (token.isNullOrBlank()) return null
+    val digitsOnly = token.filter { it.isDigit() }
+    return digitsOnly.toLongOrNull()
+}
+
+fun formatTokenDisplay(token: String?, tokenNumber: Long = 0L): String {
+    val raw = token?.trim() ?: ""
+    if (raw.startsWith("#")) return raw
+    val numericVal = raw.toLongOrNull()
+    if (numericVal != null) {
+        return String.format(java.util.Locale.ROOT, "#%03d", numericVal)
+    }
+    if (raw.isNotEmpty()) {
+        return "#$raw"
+    }
+    if (tokenNumber > 0L) {
+        return String.format(java.util.Locale.ROOT, "#%03d", tokenNumber)
+    }
+    return "-"
+}
+
+fun sortQueueEntries(entries: List<QueueEntry>): List<QueueEntry> {
+    return entries.sortedWith(
+        compareBy<QueueEntry> { entry ->
+            when (normalizeStatus(entry.status)) {
+                BookingStatus.NOW_SERVING.name -> 0
+                BookingStatus.PROCESSING.name -> 1
+                BookingStatus.WAITING.name -> 2
+                BookingStatus.CHECKED_IN.name -> 2
+                else -> 3
+            }
+        }.thenBy { entry ->
+            if (entry.tokenNumber > 0L) {
+                entry.tokenNumber
+            } else {
+                extractNumericToken(entry.getEffectiveToken()) ?: Long.MAX_VALUE
+            }
+        }.thenBy { entry ->
+            entry.getEffectiveCheckInTime()
+        }.thenBy { entry ->
+            entry.getEffectiveToken()
+        }.thenBy { entry ->
+            entry.id
+        }
+    )
 }
 
 fun normalizeStatus(status: String?): String {
@@ -146,10 +206,12 @@ fun mergeBookingWithQueueEntry(booking: Booking, queueEntry: QueueEntry?): Booki
     }
     val authStatus = getAuthoritativeStatus(booking.status, queueEntry.status)
     val token = queueEntry.getEffectiveToken().ifEmpty { booking.queueToken }
+    val tokenNum = if (queueEntry.tokenNumber > 0L) queueEntry.tokenNumber else booking.tokenNumber
     val checkIn = queueEntry.checkInTime ?: queueEntry.checkedInAt ?: booking.checkedInAt
     return booking.copy(
         status = authStatus,
         queueToken = token,
+        tokenNumber = tokenNum,
         checkedInAt = checkIn
     )
 }
