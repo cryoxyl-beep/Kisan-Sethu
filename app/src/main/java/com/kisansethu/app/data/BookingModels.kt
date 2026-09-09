@@ -58,5 +58,20 @@ data class Booking(
     val qrCodeData: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val queueToken: String = "",
-    val checkedInAt: Long = 0L
+    val checkedInAt: java.util.Date? = null
+)
+
+data class QueueEntry(
+    val id: String = "",
+    val farmerId: String = "",
+    val centreId: String = "",
+    val procurementDate: String = "", // Used to scope queue to the same day
+    val status: String = "",
+    val queueToken: String = "",
+    val checkedInAt: java.util.Date? = null,
+    // Add extra fields needed for UI display if needed, 
+    // but the farmer app can also read booking details if necessary.
+    val slotStartTime: String = "",
+    val slotEndTime: String = "",
+    val centreName: String = ""
 )

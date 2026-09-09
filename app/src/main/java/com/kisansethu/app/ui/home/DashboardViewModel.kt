@@ -3,9 +3,9 @@ package com.kisansethu.app.ui.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kisansethu.app.data.Booking
 import com.kisansethu.app.data.BookingRepository
 import com.kisansethu.app.data.BookingStatus
+import com.kisansethu.app.data.QueueEntry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,17 +53,12 @@ class DashboardViewModel : ViewModel() {
     private fun observeMyQueueStatus(farmerId: String) {
         myBookingsJob?.cancel()
         myBookingsJob = viewModelScope.launch {
-            repository.getUpcomingBookingsRealtime(farmerId).collect { result ->
+            repository.getFarmerActiveQueueEntry(farmerId).collect { result ->
                 if (result.isSuccess) {
-                    val bookings = result.getOrNull() ?: emptyList()
-                    val activeQueueBooking = bookings.firstOrNull { 
-                        it.status == BookingStatus.WAITING.name || 
-                        it.status == BookingStatus.NOW_SERVING.name || 
-                        it.status == BookingStatus.PROCESSING.name 
-                    }
+                    val activeQueueEntry = result.getOrNull()
 
-                    if (activeQueueBooking != null) {
-                        observeLiveQueue(activeQueueBooking)
+                    if (activeQueueEntry != null) {
+                        observeLiveQueue(activeQueueEntry)
                     } else {
                         liveQueueJob?.cancel()
                         _uiState.value = _uiState.value.copy(
@@ -76,20 +71,19 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
-    private fun observeLiveQueue(myBooking: Booking) {
+    private fun observeLiveQueue(myQueueEntry: QueueEntry) {
         liveQueueJob?.cancel()
         liveQueueJob = viewModelScope.launch {
-            repository.getLiveQueueRealtime(myBooking.centreId, myBooking.bookingDate).collect { result ->
+            repository.getLiveQueueRealtime(myQueueEntry.centreId, myQueueEntry.procurementDate).collect { result ->
                 if (result.isSuccess) {
                     val queue = result.getOrNull() ?: emptyList()
                     
                     // The queue is already sorted by checkedInAt from the repository
-                    val myIndex = queue.indexOfFirst { it.trackingId == myBooking.trackingId }
+                    val myIndex = queue.indexOfFirst { it.id == myQueueEntry.id }
                     
                     val myPosition = if (myIndex >= 0) myIndex + 1 else 0
                     
-                    // People ahead are the ones before me in the queue who are WAITING or NOW_SERVING
-                    // Wait, people ahead in queue = myIndex
+                    // People ahead are the ones before me in the queue
                     val farmersAhead = if (myIndex > 0) myIndex else 0
                     
                     // Current serving token: the first one with NOW_SERVING or PROCESSING
@@ -101,14 +95,14 @@ class DashboardViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(
                         hasActiveQueue = true,
                         liveQueueData = LiveQueueData(
-                            centreName = myBooking.centreName,
-                            bookingDate = myBooking.bookingDate,
-                            timeSlot = "${myBooking.slotStartTime} - ${myBooking.slotEndTime}",
-                            myToken = myBooking.queueToken.ifEmpty { myBooking.trackingId },
+                            centreName = myQueueEntry.centreName,
+                            bookingDate = myQueueEntry.procurementDate,
+                            timeSlot = "${myQueueEntry.slotStartTime} - ${myQueueEntry.slotEndTime}",
+                            myToken = myQueueEntry.queueToken.ifEmpty { myQueueEntry.id },
                             currentServingToken = currentServing,
                             farmersAhead = farmersAhead,
                             myPosition = myPosition,
-                            queueStatus = myBooking.status
+                            queueStatus = myQueueEntry.status
                         )
                     )
                 }

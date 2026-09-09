@@ -87,10 +87,40 @@ class BookingRepository {
         }
     }
 
-    fun getLiveQueueRealtime(centreId: String, bookingDate: String): kotlinx.coroutines.flow.Flow<Result<List<Booking>>> = kotlinx.coroutines.flow.callbackFlow {
-        val listenerRegistration = bookingsCollection
+    private val queueEntriesCollection = firestore.collection("queueEntries")
+
+    fun getFarmerActiveQueueEntry(farmerId: String): kotlinx.coroutines.flow.Flow<Result<QueueEntry?>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = queueEntriesCollection
+            .whereEqualTo("farmerId", farmerId)
+            .whereIn("status", listOf(
+                BookingStatus.CHECKED_IN.name,
+                BookingStatus.WAITING.name,
+                BookingStatus.NOW_SERVING.name,
+                BookingStatus.PROCESSING.name,
+                BookingStatus.COMPLETED.name
+            ))
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && !snapshot.isEmpty) {
+                    // Usually there is only 1 active queue entry per farmer.
+                    val entry = snapshot.toObjects(QueueEntry::class.java).firstOrNull()
+                    trySend(Result.success(entry))
+                } else {
+                    trySend(Result.success(null))
+                }
+            }
+        awaitClose {
+            listenerRegistration.remove()
+        }
+    }
+
+    fun getLiveQueueRealtime(centreId: String, procurementDate: String): kotlinx.coroutines.flow.Flow<Result<List<QueueEntry>>> = kotlinx.coroutines.flow.callbackFlow {
+        val listenerRegistration = queueEntriesCollection
             .whereEqualTo("centreId", centreId)
-            .whereEqualTo("bookingDate", bookingDate)
+            .whereEqualTo("procurementDate", procurementDate)
             .whereIn("status", listOf(
                 BookingStatus.WAITING.name,
                 BookingStatus.NOW_SERVING.name,
@@ -103,7 +133,7 @@ class BookingRepository {
                 }
                 if (snapshot != null) {
                     // Sort by checkedInAt so the queue is in order
-                    val queue = snapshot.toObjects(Booking::class.java).sortedBy { it.checkedInAt }
+                    val queue = snapshot.toObjects(QueueEntry::class.java).sortedBy { it.checkedInAt?.time ?: 0L }
                     trySend(Result.success(queue))
                 }
             }

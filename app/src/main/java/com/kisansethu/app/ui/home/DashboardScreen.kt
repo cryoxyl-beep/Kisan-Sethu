@@ -153,7 +153,7 @@ fun LiveQueueCard(queueData: LiveQueueData) {
     val isServing = queueData.queueStatus == BookingStatus.NOW_SERVING.name
     val isProcessing = queueData.queueStatus == BookingStatus.PROCESSING.name
     val isCompleted = queueData.queueStatus == BookingStatus.COMPLETED.name
-    val isWaiting = queueData.queueStatus == BookingStatus.WAITING.name
+    val isCheckedIn = queueData.queueStatus == BookingStatus.CHECKED_IN.name
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -192,7 +192,7 @@ fun LiveQueueCard(queueData: LiveQueueData) {
             when {
                 isCompleted -> {
                     QueueAlertBox(
-                        title = "PROCUREMENT COMPLETED",
+                        title = "Procurement completed",
                         message = "The procurement process has been completed.",
                         token = queueData.myToken,
                         color = Color(0xFF4CAF50)
@@ -200,7 +200,7 @@ fun LiveQueueCard(queueData: LiveQueueData) {
                 }
                 isProcessing -> {
                     QueueAlertBox(
-                        title = "PROCESSING",
+                        title = "Procurement in progress",
                         message = "Your procurement process has started.",
                         token = queueData.myToken,
                         color = Color(0xFF0288D1)
@@ -208,10 +208,18 @@ fun LiveQueueCard(queueData: LiveQueueData) {
                 }
                 isServing -> {
                     QueueAlertBox(
-                        title = "NOW SERVING",
+                        title = "Your turn is now",
                         message = "Please proceed to the procurement counter.",
                         token = queueData.myToken,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                isCheckedIn -> {
+                    QueueAlertBox(
+                        title = "You're checked in",
+                        message = "Please wait. You will be added to the queue shortly.",
+                        token = queueData.myToken,
+                        color = Color(0xFFE65100)
                     )
                 }
                 else -> {
@@ -221,7 +229,7 @@ fun LiveQueueCard(queueData: LiveQueueData) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         QueueMetric(label = "Your Token", value = queueData.myToken, highlight = true)
-                        QueueMetric(label = "Now Serving", value = queueData.currentServingToken)
+                        QueueMetric(label = "Current Serving Token", value = queueData.currentServingToken)
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -232,7 +240,7 @@ fun LiveQueueCard(queueData: LiveQueueData) {
                     ) {
                         QueueMetric(label = "Your Position", value = queueData.myPosition.toString())
                         QueueMetric(label = "People Ahead", value = queueData.farmersAhead.toString())
-                        QueueMetric(label = "Status", value = "Waiting")
+                        QueueMetric(label = "Status", value = "You're in the queue")
                     }
                 }
             }
