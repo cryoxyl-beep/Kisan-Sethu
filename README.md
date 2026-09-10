@@ -1,72 +1,225 @@
 # 🌾 Kissaan Sync (Kisan-Sethu)
 
-> A modern, digital public-service Android application designed to provide farmers with a calm, trustworthy, and minimal interface for procurement slot bookings, live queue tracking, and direct payment tracking.
+[![Android](https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026--35)-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20%2F%20Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Firebase](https://img.shields.io/badge/Backend-Firebase%20Firestore%20%26%20RTDB-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Built natively for Android using **Kotlin**, **Jetpack Compose**, and **Firebase**.
+> **A next-generation, digital public-service Android application designed to empower farmers with a calm, trustworthy, and minimal interface for agricultural procurement slot bookings, real-time live queue tracking, digital gate check-ins, and direct payment reconciliation.**
 
----
-
-## 📖 About This Project
-
-Kissaan Sync bridges the gap between complex digital infrastructure and the agricultural sector. It offers farmers a seamless, government-service-oriented platform that is easy to understand and use. 
-
-**Design Philosophy:** We intentionally stepped away from traditional "agricultural clichés" (like cluttered green backgrounds and tractor vectors). Instead, the app focuses on a hyper-clean, minimal, and modern digital identity that instills trust and clarity. 
-
-**Recent Enhancements:** The application features premium UX details, such as an iOS-inspired **"Liquid Glass" split-pill navigation bar** that utilizes real-time frosted glass rendering, and a robust **Persistent Session** system that remembers your login state so you can get straight to your dashboard.
+Built natively for Android using **100% Jetpack Compose**, **Material 3**, and **Firebase**.
 
 ---
 
-## ✨ Features In Detail
+## 📥 Download & Install (Latest Compiled APK)
 
-### 🧭 Liquid Glass Navigation
-* **True Background Blur:** Built using the `Haze` library, the navigation bar leverages Android's `RenderNode` APIs to dynamically blur the scrolling content behind it in real-time.
-* **Dual-Theme Adaptive:** The frosted glass intelligently adapts. In Light Mode, it renders a bright, airy frost. In Dark Mode, it shifts to a sleek, dim translucent glass. 
-* **Swipe-to-Navigate:** Simply swipe left or right across the bottom bar to smoothly transition between tabs.
-* **Minimalist UI:** Icon-only interface with a subtle, gray pill-shaped highlight for the active state.
+The latest pre-compiled debug APK is built and hosted directly in this repository.
 
-### 🔐 Smart Authentication & Sessions
-* **Persistent Login:** Log in once and stay logged in. The app securely persists session tokens using Android `DataStore`, bypassing the login screen on subsequent launches.
-* **Flexible Sign-In:** Authenticate using a unique 6-character **Farmer ID** or a 10-digit **Mobile Number**, combined with a secure 6-digit PIN.
-* **Secure Registration:** A seamless 4-step onboarding process safely stores farmer credentials and demographic data via Firebase Realtime Database.
+👉 **[Download KisanSethu-debug.apk](release/KisanSethu-debug.apk)** *(~37 MB)*
 
-### 🌍 Accessibility & Dashboard
-* **Multi-Language Support:** Remembers localized language preferences (English, Hindi, Telugu, etc.) securely, applying them instantly across the app.
-* **Dynamic Dashboard:** A context-aware UI that conditionally displays live queues and active token status only when a procurement slot is actively booked.
+> **Installation Note:** Ensure that *"Install unknown apps"* or *"Install from Unknown Sources"* is enabled in your Android device settings for your browser or file manager.
 
 ---
 
-## 📥 Download & Install (Published Package)
+## 📖 About The Project
 
-You can download and install the latest compiled APK package directly from this repository:
+**Kissaan Sync (Kisan-Sethu)** bridges the gap between state agricultural procurement infrastructure (Minimum Support Price / MSP procurement centers) and the farming community. 
 
-**👉 [Download KisanSethu-debug.apk](release/KisanSethu-debug.apk)**
+Historically, farmers faced unpredictable wait times, physical crowding at procurement yards, lack of slot clarity, and manual token issuance. Kissaan Sync eliminates friction through end-to-end digital transparency:
+- Farmers reserve time slots in advance from their mobile phones.
+- Arrive at the procurement center and present an on-device digital QR ticket for touchless gate check-in.
+- Track their queue spot live on their phone without standing in physical lines.
+- Monitor active produce inspection, weighing, and quality grading.
+- Receive finalized settlement receipts and payment records directly on their device.
 
-*Note: You may need to enable "Install from Unknown Sources" on your Android device to install the APK.*
+### 🎨 Design Philosophy
+* **Zero Agriculture Clichés:** We intentionally eliminated cluttered cartoon tractors, low-contrast greens, and bloated cards. Instead, the interface adheres to clean, modern, and high-trust digital design principles.
+* **Calm & Minimalist:** High contrast, legible typography, generous tap targets, and consistent 4dp/8dp/12dp/16dp/24dp spacing grids tailored for all age groups.
+* **Instant Readability:** A farmer glancing at their phone understands *"My Token Number"*, *"Who is Being Served"*, and *"How Many People Are Ahead"* within two seconds.
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## 🚀 Key Features
 
+### 1. 🔄 Authoritative Booking & Procurement Lifecycle
+Kissaan Sync implements an end-to-end synchronized lifecycle where the Admin Dashboard acts as the authority, and the farmer app reacts instantly in real time via Firebase Firestore snapshot listeners (no manual refresh or polling required):
+
+```
+BOOKED  ➡️  CONFIRMED  ➡️  CHECKED_IN  ➡️  WAITING  ➡️  NOW_SERVING  ➡️  PROCESSING  ➡️  COMPLETED
+```
+
+* **Dynamic Screen Routing:** 
+  * Pending appointments (`BOOKED`) reside in **Bookings ➔ Upcoming**.
+  * Active appointments (`CONFIRMED`, `CHECKED_IN`, `WAITING`, `NOW_SERVING`, `PROCESSING`) dynamically take center stage on the **Home Screen Active Procurement Dashboard**.
+  * Finalized procurements (`COMPLETED`) transition automatically into **Bookings ➔ Completed** history.
+* **Date Intelligence:** Unconfirmed bookings scheduled for future days clearly display as **`SCHEDULED BOOKING`** with slot dates, preserving user clarity.
+
+---
+
+### 2. 🎫 Phase A5.4: Live Digital Procurement Ticket & Real-Time Queue View
+Once checked in at the procurement yard, farmers tap **"View Live Details"** to launch their real-time Digital Procurement Ticket:
+* **Digital Queue Token:** Prominently highlights the farmer’s official token number (e.g., `#014`) generated by the procurement center.
+* **Live Serving Counter:** Displays the token currently at the counter (e.g., Now Serving `#011`).
+* **Dynamic Position & Wait Counts:** Dynamically calculates:
+  * **Your Position in Queue:** (e.g., `Position: 4`)
+  * **People Ahead of You:** (e.g., `3 ahead`)
+* **State-Adaptive Guidance:**
+  * **`WAITING`:** Reassuring, calm queue monitoring with automatic position countdown as entries ahead clear.
+  * **`NOW_SERVING`:** Prominent alert: *"YOUR TURN — Please proceed to the procurement counter."*
+  * **`PROCESSING`:** Live indicator confirming that inspection and weighing have begun.
+  * **`COMPLETED`:** Completion ticket with full procurement wrap-up.
+* **Read-Only Safety:** Farmers cannot tamper with queue tokens or ordering; all queue sessions are scoped strictly to `centreId`, `procurementDate`, and check-in timestamp.
+
+---
+
+### 3. 💰 Phase A6.1: Finalized Procurement Results Display
+When the procurement center finalizes the transaction, the farmer’s app instantly updates to display the official government settlement:
+* **Final Crop & Measurement:** Authoritative crop name and exact measured weight (with automated unit handling for kg and Quintals).
+* **Official Rate (MSP):** Authoritative government purchase rate per unit (e.g., `₹28 / kg` or `₹2,800 / quintal`).
+* **Deductions & Adjustments:** Transparent accounting for any moisture or quality deductions recorded at the center.
+* **Final Payable Amount:** Authoritative net payable balance (e.g., `₹6,860`) ready for direct bank transfer.
+* **Persistent History:** Stored permanently in the **Bookings ➔ Completed** section and accessible anytime across app restarts.
+
+---
+
+### 4. 📅 5-Step Procurement Booking Flow Wizard
+A streamlined wizard accessible via the central floating action button (**`+`**):
+1. **Select Date:** Choose from upcoming open procurement dates.
+2. **Select Center:** Choose from nearby state procurement yards with real-time capacity and distance indicators.
+3. **Select Time Slot:** Pick an hourly arrival window to prevent center congestion.
+4. **Produce Details:** Choose produce (Paddy, Cotton, Wheat, Maize, etc.), quantity, and unit of measurement.
+5. **Review & Confirm:** Summary verification screen before submitting directly to Firestore.
+
+---
+
+### 5. 📱 Instant On-Device QR Code Generation
+* Every booking automatically generates a unique tracking ID (e.g., `KS268SX58H`).
+* An encrypted, high-contrast QR code is rendered natively on-device using ZXing.
+* Center administrators scan the QR code directly off the farmer’s phone screen for instant, touchless gate verification and queue check-in.
+
+---
+
+### 6. 💳 Transparent Payments & Ledger
+* Dedicated **Payments** tab (previously labeled Schemes) providing financial transparency:
+  * Bank account linkage and verification status (DBT / Direct Benefit Transfer).
+  * Transaction history with settlement timestamps, UTR numbers, and disbursement status (*Processing*, *Credited*, *Under Review*).
+
+---
+
+### 7. 👤 Farmer Identity & Multi-Language Profile
+* Comprehensive farmer credentials including unique 6-character **Farmer ID**, mobile number, land record mapping (Patta / Survey No.), and Aadhaar verification badge.
+* Language selection supporting regional agricultural communities (English, Hindi, Telugu, etc.).
+
+---
+
+### 8. 🧭 Liquid Glass Bottom Navigation
+* **Real-time Frosted Blur:** Built using the `Haze` library, harnessing Android’s `RenderNode` APIs to dynamically blur scrolling content beneath the navigation bar in real time.
+* **Fluid Gestures:** Swipe horizontally across the split-pill bar to smoothly transition between `Home`, `Bookings`, `Payments`, and `Profile`.
+* **One-Tap Procurement Launcher:** Floating `+` button directly opens the 5-step booking wizard from any main screen.
+
+---
+
+### 9. 🔐 Authentication & Session Persistence
+* **Fast Sign-In:** Authenticate with either **Farmer ID** or **Mobile Number** paired with a secure 6-digit PIN.
+* **Encrypted DataStore Persistence:** Retains authenticated session tokens safely; app opens directly to the farmer’s dashboard on subsequent launches.
+* **Onboarding Flow:** 4-step registration storing farmer identity safely in Firebase.
+
+---
+
+### 10. 🔔 Firebase Cloud Messaging (FCM) Integration
+* Background and foreground push notifications for critical queue alerts (*"You are next in queue"*, *"Now Serving Token #014"*, *"Procurement Completed"*).
+* Device token auto-registration binds hardware IDs securely to Firebase Realtime Database without exposing backend credentials.
+
+---
+
+### 11. 🌿 Modern Launcher Icon & Brand Identity
+* Replaced legacy Android icons with custom, crisp brand imagery across all density buckets (`mipmap-mdpi`, `mipmap-hdpi`, `mipmap-xhdpi`, `mipmap-xxhdpi`, `mipmap-xxxhdpi`).
+* Full **Adaptive Icon** support (`mipmap-anydpi-v26`) featuring a custom vector foreground and deep forest green (`#144834`) background for Samsung One UI, Pixel Launcher, and Material You theming.
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+```
+com.kisansethu.app/
+├── data/
+│   ├── BookingModels.kt          # Booking, QueueEntry, FinalizedProcurement models
+│   ├── BookingRepository.kt      # Real-time Firestore snapshot streams & sync logic
+│   └── UserPreferences.kt        # Jetpack DataStore session & language storage
+├── navigation/
+│   ├── NavGraph.kt               # Jetpack Compose Navigation graph & deep links
+│   └── Screen.kt                 # Sealed routes (Home, Bookings, Ticket, Payments, Profile)
+├── ui/
+│   ├── auth/                     # Login, Registration, PIN verification
+│   ├── booking/                  # 5-step wizard, Upcoming/Completed list, Detail modal
+│   ├── dashboard/                # Home screen, Active Procurement card, Live queue badge
+│   ├── queue/                    # Live Procurement Ticket & Real-time queue view
+│   ├── payments/                 # DBT status, ledger, payment history
+│   ├── profile/                  # Farmer profile, language switch, settings
+│   └── theme/                    # Material 3 typography, color schemes, Haze blur modifiers
+└── util/
+    ├── QRCodeGenerator.kt        # ZXing bitmap generator
+    └── MyFirebaseMessagingService.kt # FCM background token & notification handler
+```
+
+### Technology Highlights
+* **Language:** Kotlin 2.0.0
 * **UI Toolkit:** Jetpack Compose (Material Design 3)
-* **Language:** Kotlin
-* **Visual Effects:** `dev.chrisbanes.haze` (for real-time composable blur)
-* **Backend / DB:** Firebase Realtime Database
-* **Local Storage:** Jetpack DataStore (Preferences)
-* **Architecture:** MVVM (Model-View-ViewModel) & Compose Navigation Component
-### 📦 Procurement Slot Bookings (Phase 2.2)
-* **Smart Booking Flow:** A seamless, 5-step wizard to book procurement slots (Date -> Centre -> Time -> Produce -> Review).
-* **Firebase Firestore Integration:** All bookings are securely persisted to Firestore with a highly optimized data structure.
-* **Auto-generated Tracking IDs:** Creates clean, unique, non-sequential tracking codes (e.g., KS26XXXXXX) that protect personal demographic data.
-* **Integrated QR Generation:** Generates a robust QR code encoding the tracking ID natively on the device using ZXing, ready to be scanned at the procurement centre.
-* **Intelligent Unit Normalization:** Automatically handles agricultural conversions (e.g., Quintal to KG) on the fly.
+* **Architecture:** Modern Android Architecture (MVVM, Repository Pattern, StateFlow / SharedFlow)
+* **Visual Effects:** `dev.chrisbanes.haze` (GPU RenderNode frosted glass blur)
+* **Database & Cloud:** 
+  * Cloud Firestore (`bookings`, `queueEntries`, `queueCounters`)
+  * Firebase Realtime Database (`farmers/{farmerId}/devices`)
+  * Firebase Cloud Messaging (FCM)
+* **Local Storage:** Android Jetpack DataStore Preferences
+* **QR Processing:** ZXing Core
 
-### ⏱️ Live Queue & Real-time Tracking (Phase A5.3)
-* **Real-time Status Sync:** The app connects directly to Firestore `addSnapshotListener` streams to reflect live queue status instantly across `WAITING`, `NOW_SERVING`, `PROCESSING`, and `COMPLETED`.
-* **Live Dashboard Widget:** Dynamic queue card displaying your active token, current serving token, calculated queue position, and exact number of farmers ahead of you based on check-in timestamps.
-* **FCM Push Notifications:** Fully integrated Android client architecture for Firebase Cloud Messaging (FCM). Automatically binds the device token (`ANDROID_ID`) to the Firebase Realtime Database for targeted backend trigger alerts without hardcoding sensitive server keys.
+---
 
-### ? Phase A5.4 UI Refactor & Strict Lifecycle Routing
-* **Jetpack Compose Overhaul:** Complete redesign of the UI with pixel-perfect alignment to the Figma reference. Clean 'Sexy Light Mode' exclusively, utilizing precise hex spacing, badges, and typography.
-* **Strict Firebase Lifecycle Binding:** Bookings dynamically shift between the active Home screen (CONFIRMED, CHECKED_IN, WAITING, NOW_SERVING, PROCESSING) and the Upcoming/Completed segmented tabs based entirely on their real-time Firestore status. No mock states, no offline lag.
-* **Action Navigation Fixes:** The floating + button now correctly jumps straight into the WIZARD routing for New Procurement flow, and the 'Schemes' navigation label was globally corrected to 'Payments'.
+## 🛠️ Building & Running From Source
 
+### Prerequisites
+* Android Studio Ladybug (2024.2+) or newer
+* Android SDK 35 (compileSdk: 35, minSdk: 26)
+* JDK 17 or JDK 21
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/cryoxyl-beep/Kisan-Sethu.git
+cd Kisan-Sethu
+```
+
+### 2. Configure Firebase
+Ensure your `google-services.json` file is placed inside the `app/` directory.
+
+### 3. Build Debug APK
+```bash
+# Windows
+.\gradlew.bat assembleDebug
+
+# macOS / Linux
+./gradlew assembleDebug
+```
+
+The output APK will be generated at:
+```
+app/build/outputs/apk/debug/app-debug.apk
+```
+
+### 4. Install onto Connected Device via ADB
+```bash
+adb install -r release/KisanSethu-debug.apk
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE). 
+
+---
+
+<p align="center">
+  <b>Kissaan Sync (Kisan-Sethu)</b> • Digital Public Infrastructure for Farmers
+</p>
